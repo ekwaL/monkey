@@ -23,8 +23,20 @@ func (l *Lexer) NextToken() token.Token {
 	switch l.ch {
 	case '+':
 		tok = makeToken(token.PLUS, l.ch)
+	case '-':
+		tok = makeToken(token.MINUS, l.ch)
+	case '*':
+		tok = makeToken(token.STAR, l.ch)
+	case '/':
+		tok = makeToken(token.SLASH, l.ch)
+	case '!':
+		tok = makeToken(token.BANG, l.ch)
 	case '=':
 		tok = makeToken(token.ASSIGN, l.ch)
+	case '<':
+		tok = makeToken(token.LESS, l.ch)
+	case '>':
+		tok = makeToken(token.GREATER, l.ch)
 	case '(':
 		tok = makeToken(token.LPAREN, l.ch)
 	case ')':

@@ -15,6 +15,9 @@ let add = fn(x, y) {
 };
 
 let result = add(five, ten);
+
+!-/*5;
+5 < 10 > 5;
 `
 
 func TestNextToken(t *testing.T) {
@@ -24,18 +27,24 @@ func TestNextToken(t *testing.T) {
 		expectedType    token.TokenType
 		expectedLiteral string
 	}{
+
+		// let five = 5 ;
 		{token.LET, "let"},
 		{token.IDENTIFIER, "five"},
 		{token.ASSIGN, "="},
 		{token.INT, "5"},
 		{token.SEMICOLON, ";"},
 
+		// let ten = 10;
 		{token.LET, "let"},
 		{token.IDENTIFIER, "ten"},
 		{token.ASSIGN, "="},
 		{token.INT, "10"},
 		{token.SEMICOLON, ";"},
 
+		// let add = fn(x, y) {
+		// 	x + y;
+		// };
 		{token.LET, "let"},
 		{token.IDENTIFIER, "add"},
 		{token.ASSIGN, "="},
@@ -52,6 +61,8 @@ func TestNextToken(t *testing.T) {
 		{token.SEMICOLON, ";"},
 		{token.RBRACE, "}"},
 		{token.SEMICOLON, ";"},
+
+		// let result = add(five, ten);
 		{token.LET, "let"},
 		{token.IDENTIFIER, "result"},
 		{token.ASSIGN, "="},
@@ -61,6 +72,22 @@ func TestNextToken(t *testing.T) {
 		{token.COMMA, ","},
 		{token.IDENTIFIER, "ten"},
 		{token.RPAREN, ")"},
+		{token.SEMICOLON, ";"},
+
+		// !-/*5;
+		{token.BANG, "!"},
+		{token.MINUS, "-"},
+		{token.SLASH, "/"},
+		{token.STAR, "*"},
+		{token.INT, "5"},
+		{token.SEMICOLON, ";"},
+
+		// 5 < 10 > 5;
+		{token.INT, "5"},
+		{token.LESS, "<"},
+		{token.INT, "10"},
+		{token.GREATER, ">"},
+		{token.INT, "5"},
 		{token.SEMICOLON, ";"},
 
 		{token.EOF, "\x00"},
