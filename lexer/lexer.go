@@ -30,13 +30,37 @@ func (l *Lexer) NextToken() token.Token {
 	case '/':
 		tok = makeToken(token.SLASH, l.ch)
 	case '!':
-		tok = makeToken(token.BANG, l.ch)
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.NOT_EQUAL, Literal: string(ch) + string(l.ch)}
+		} else {
+			tok = makeToken(token.BANG, l.ch)
+		}
 	case '=':
-		tok = makeToken(token.ASSIGN, l.ch)
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.EQUAL_EQUAL, Literal: string(ch) + string(l.ch)}
+		} else {
+			tok = makeToken(token.ASSIGN, l.ch)
+		}
 	case '<':
-		tok = makeToken(token.LESS, l.ch)
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.LESS_EQUAL, Literal: string(ch) + string(l.ch)}
+		} else {
+			tok = makeToken(token.LESS, l.ch)
+		}
 	case '>':
-		tok = makeToken(token.GREATER, l.ch)
+		if l.peekChar() == '=' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.GREATER_EQUAL, Literal: string(ch) + string(l.ch)}
+		} else {
+			tok = makeToken(token.GREATER, l.ch)
+		}
 	case '(':
 		tok = makeToken(token.LPAREN, l.ch)
 	case ')':
@@ -96,6 +120,14 @@ func (l *Lexer) readChar() {
 
 	l.position = l.readPosition
 	l.readPosition += 1
+}
+
+func (l *Lexer) peekChar() byte {
+	if l.readPosition >= len(l.input) {
+		return 0
+	} else {
+		return l.input[l.readPosition]
+	}
 }
 
 func (l *Lexer) skipWhitespace() {

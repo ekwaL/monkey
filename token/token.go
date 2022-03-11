@@ -21,8 +21,12 @@ const (
 	SLASH  = "/"
 	BANG   = "!"
 
-	LESS         = "<"
-	GREATER      = ">"
+	LESS          = "<"
+	GREATER       = ">"
+	EQUAL_EQUAL   = "=="
+	NOT_EQUAL     = "!="
+	LESS_EQUAL    = "<="
+	GREATER_EQUAL = ">="
 
 	COMMA     = ","
 	SEMICOLON = ";"
