@@ -7,6 +7,10 @@ type Token struct {
 	Literal string
 }
 
+func (t Token) String() string {
+	return "Token{Type: " + string(t.Type) + ", Literal: " + t.Literal + "}"
+}
+
 const (
 	ILLEGAL = "ILLEGAL"
 	EOF     = "EOF"
