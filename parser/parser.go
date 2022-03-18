@@ -1,23 +1,14 @@
 package parser
 
 import (
-	"fmt"
 	"monkey/ast"
 	"monkey/lexer"
 	"monkey/token"
 )
 
 type (
-	prefixParseFunc func() ast.Expression
-	infixParseFunc  func(ast.Expression) ast.Expression
-
-	PrefixParslet interface {
-		PrefixParse() ast.Expression
-	}
-
-	InfixParslet interface {
-		InfixParse(ast.Expression) ast.Expression
-	}
+	prefixParslet func() ast.Expression
+	infixParslet  func(left ast.Expression) ast.Expression
 )
 
 type Parser struct {
@@ -27,6 +18,9 @@ type Parser struct {
 
 	currToken token.Token
 	peekToken token.Token
+
+	prefixParslets map[token.TokenType]prefixParslet
+	infixParslets  map[token.TokenType]infixParslet
 }
 
 func New(l *lexer.Lexer) *Parser {
@@ -39,25 +33,6 @@ func New(l *lexer.Lexer) *Parser {
 	p.nextToken()
 
 	return &p
-}
-
-func (p *Parser) Errors() []string {
-	return p.errors
-}
-
-func (p *Parser) peekError(tt token.TokenType) {
-	msg := fmt.Sprintf("Expected next token to be %s, got %s instead.",
-		tt, p.peekToken.Type)
-	p.errors = append(p.errors, msg)
-}
-
-func (p *Parser) error(msg string) {
-	p.errors = append(p.errors, msg)
-}
-
-func (p *Parser) nextToken() {
-	p.currToken = p.peekToken
-	p.peekToken = p.l.NextToken()
 }
 
 func (p *Parser) ParseProgram() *ast.Program {
@@ -74,6 +49,10 @@ func (p *Parser) ParseProgram() *ast.Program {
 	}
 
 	return prog
+}
+
+func (p *Parser) Errors() []string {
+	return p.errors
 }
 
 func (p *Parser) parseStatement() ast.Statement {
@@ -98,22 +77,29 @@ func (p *Parser) parseExpression() ast.Expression {
 	}
 }
 
-func (p *Parser) currTokenIs(tt token.TokenType) bool {
-	return p.currToken.Type == tt
+func (p *Parser) nextToken() {
+	p.currToken = p.peekToken
+	p.peekToken = p.l.NextToken()
 }
+
+// func (p *Parser) currTokenIs(tt token.TokenType) bool {
+// 	return p.currToken.Type == tt
+// }
 
 func (p *Parser) peekTokenIs(tt token.TokenType) bool {
 	return p.peekToken.Type == tt
 }
 
+func (p *Parser) error(msg string) {
+	p.errors = append(p.errors, msg)
+}
+
 func (p *Parser) expectPeek(tt token.TokenType, errMsg string) bool {
-	// func (p *Parser) expectPeek(tt token.TokenType) bool {
 	if p.peekTokenIs(tt) {
 		p.nextToken()
 		return true
 	} else {
 		p.error(errMsg)
-		// p.peekError(tt)
 		return false
 	}
 }

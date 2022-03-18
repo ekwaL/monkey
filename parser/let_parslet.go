@@ -29,11 +29,7 @@ func (p *Parser) parseLetStmt() *ast.LetStmt {
 		return nil
 	}
 
-	// println(p.currToken.Literal, p.peekToken.Literal)
-	// if p.expectPeek(token.SEMICOLON, ERR_LET_NO_SEMI_AFTER_LET_STMT) {
-	if p.currToken.Type == token.SEMICOLON {
-		// p.nextToken()
-	} else {
+	if p.currToken.Type != token.SEMICOLON {
 		p.error(ERR_LET_NO_SEMI_AFTER_LET_STMT)
 		return nil
 	}

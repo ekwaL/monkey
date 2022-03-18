@@ -114,5 +114,5 @@ type IntLiteralExpr struct {
 func (i *IntLiteralExpr) expressionNode()      {}
 func (i *IntLiteralExpr) TokenLiteral() string { return i.Token.Literal }
 func (i *IntLiteralExpr) String() string {
-	return i.TokenLiteral() // value.String()?
+	return i.TokenLiteral()
 }
