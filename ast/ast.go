@@ -108,7 +108,7 @@ func (i *IdentifierExpr) String() string {
 
 type IntLiteralExpr struct {
 	Token token.Token
-	Value int
+	Value int64
 }
 
 func (i *IntLiteralExpr) expressionNode()      {}

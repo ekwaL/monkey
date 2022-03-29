@@ -6,7 +6,7 @@ func (p *Parser) parseReturnStmt() *ast.ReturnStmt {
 	r := &ast.ReturnStmt{Token: p.currToken }
 
 	p.nextToken()
-	r.Value = p.parseExpression()
+	r.Value = p.parseExpression(LOWEST)
 
 	return r
 }

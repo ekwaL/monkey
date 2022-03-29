@@ -4,6 +4,7 @@ import (
 	"monkey/ast"
 	"monkey/lexer"
 	"monkey/parser"
+	"strconv"
 	"testing"
 )
 
@@ -26,7 +27,7 @@ func TestParser(t *testing.T) {
 
 	tt := []struct {
 		expectedIdentifier string
-		expectedValue      int
+		expectedValue      int64
 	}{
 		{expectedIdentifier: "x", expectedValue: 5},
 		{expectedIdentifier: "y", expectedValue: 10},
@@ -71,7 +72,7 @@ func testLetStatement(t testing.TB, stmt ast.Statement, want string) bool {
 	return true
 }
 
-func testIntLiteralExpression(t testing.TB, expr ast.Expression, want int) {
+func testIntLiteralExpression(t testing.TB, expr ast.Expression, want int64) {
 	t.Helper()
 
 	intLiteralExpr, ok := expr.(*ast.IntLiteralExpr)
@@ -82,6 +83,11 @@ func testIntLiteralExpression(t testing.TB, expr ast.Expression, want int) {
 	if intLiteralExpr.Value != want {
 		t.Errorf("Wrong IntLiteralExpr Value. Got %d, want %d.", intLiteralExpr.Value, want)
 	}
+
+	wantStr := strconv.FormatInt(want, 10)
+	if intLiteralExpr.TokenLiteral() != wantStr {
+		t.Errorf("Wrong TokenLiteral(). Got %q, want %q.", intLiteralExpr.TokenLiteral(), wantStr)
+	}
 }
 
 func TestReturnStatement(t *testing.T) {
@@ -90,7 +96,7 @@ func TestReturnStatement(t *testing.T) {
 		return 9999;
 		`
 	program := parse(t, source)
-	expect := []int{5, 9999}
+	expect := []int64{5, 9999}
 
 	if program == nil {
 		t.Fatal("ParseProgram() returned 'nil'.")
@@ -114,6 +120,80 @@ func TestReturnStatement(t *testing.T) {
 
 		testIntLiteralExpression(t, returnStmt.Value, expectedValue)
 	}
+}
+
+func TestIdentifierExpressionStatement(t *testing.T) {
+	source := "foobar;"
+
+	program := parse(t, source)
+
+	want := "foobar"
+	wantLen := 1
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	expressionStmt, ok := stmt.(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+	}
+	if expressionStmt.TokenLiteral() != want {
+		t.Errorf("Wrong TokenLiteral, want %q, got %q.", want, expressionStmt.TokenLiteral())
+	}
+
+	testIdentifierExpression(t, expressionStmt.Expression, want)
+}
+
+func testIdentifierExpression(t testing.TB, expr ast.Expression, want string) {
+	identExpr, ok := expr.(*ast.IdentifierExpr)
+	if !ok {
+		t.Errorf("Expression is not IdentifierExpr, got %T.", expr)
+	}
+
+	if identExpr.Value != want {
+		t.Errorf("Wrong IdentifierExpr Value. Got %q, want %q.", identExpr.Value, want)
+	}
+
+	if identExpr.TokenLiteral() != want {
+		t.Errorf("Wrong TokenLiteral, want %q, got %q.", want, identExpr.TokenLiteral())
+	}
+
+	t.Helper()
+}
+
+func TestIntLiteral(t *testing.T) {
+	source := "10;"
+
+	program := parse(t, source)
+
+	want := "10"
+	var wantInt int64 = 10
+	wantLen := 1
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	expressionStmt, ok := stmt.(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+	}
+	if expressionStmt.TokenLiteral() != want {
+		t.Errorf("Wrong TokenLiteral, want %q, got %q.", want, expressionStmt.TokenLiteral())
+	}
+
+	testIntLiteralExpression(t, expressionStmt.Expression, wantInt)
 }
 
 func ensureNoParserErrors(t testing.TB, p *parser.Parser) {

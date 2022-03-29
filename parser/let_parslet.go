@@ -16,14 +16,14 @@ func (p *Parser) parseLetStmt() *ast.LetStmt {
 		return nil
 	}
 
-	name := p.parseIdentifierExpr()
+	name := p.parseIdentifierExpr().(*ast.IdentifierExpr)
 
 	if !p.expectPeek(token.ASSIGN, ERR_LET_NO_ASSIGN_AFTER_IDENTIFIER) {
 		return nil
 	}
 
 	p.nextToken()
-	value := p.parseExpression()
+	value := p.parseExpression(LOWEST)
 
 	if value == nil {
 		return nil

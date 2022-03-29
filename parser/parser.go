@@ -6,6 +6,18 @@ import (
 	"monkey/token"
 )
 
+// operator precedence
+const (
+	_ int = iota
+	LOWEST
+	EQUALS      // ==
+	LESSGREATER // > || <
+	SUM         // +
+	PRODUCT     // *
+	PREFIX      // -X || !x
+	CALL        // function()
+)
+
 type (
 	prefixParslet func() ast.Expression
 	infixParslet  func(left ast.Expression) ast.Expression
@@ -31,6 +43,10 @@ func New(l *lexer.Lexer) *Parser {
 
 	p.nextToken()
 	p.nextToken()
+
+	p.prefixParslets = make(map[token.TokenType]prefixParslet)
+	p.registerPrefix(token.IDENTIFIER, p.parseIdentifierExpr)
+	p.registerPrefix(token.INT, p.parseIntLiteralExpr)
 
 	return &p
 }
@@ -62,19 +78,18 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStmt()
 	default:
-		return nil
+		return p.parseExpressionStmt()
 	}
 }
 
-func (p *Parser) parseExpression() ast.Expression {
-	switch p.currToken.Type {
-	case token.IDENTIFIER:
-		return p.parseIdentifierExpr()
-	case token.INT:
-		return p.parseIntLiteralExpr()
-	default:
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParslets[p.currToken.Type]
+	if prefix == nil {
 		return nil
 	}
+
+	leftExpr := prefix()
+	return leftExpr
 }
 
 func (p *Parser) nextToken() {
@@ -102,4 +117,13 @@ func (p *Parser) expectPeek(tt token.TokenType, errMsg string) bool {
 		p.error(errMsg)
 		return false
 	}
+}
+
+func (p *Parser) registerPrefix(tt token.TokenType, fn prefixParslet) {
+	p.prefixParslets[tt] = fn
+}
+
+func (p *Parser) registerInfix(tt token.TokenType, fn infixParslet) {
+	p.infixParslets[tt] = fn
+
 }
