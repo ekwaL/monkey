@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"monkey/ast"
 	"monkey/lexer"
 	"monkey/token"
@@ -17,6 +18,8 @@ const (
 	PREFIX      // -X || !x
 	CALL        // function()
 )
+
+const ERR_NO_PREFIX_PARSLET_FOUND = "No prefix parslet found for %q."
 
 type (
 	prefixParslet func() ast.Expression
@@ -48,6 +51,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.prefixParslets = make(map[token.TokenType]prefixParslet)
 	p.registerPrefix(token.IDENTIFIER, p.parseIdentifierExpr)
 	p.registerPrefix(token.INT, p.parseIntLiteralExpr)
+	p.registerPrefix(token.BANG, p.parsePrefixExpr)
+	p.registerPrefix(token.MINUS, p.parsePrefixExpr)
 
 	return &p
 }
@@ -89,6 +94,7 @@ func (p *Parser) parseStatement() ast.Statement {
 func (p *Parser) parseExpression(precedence int) ast.Expression {
 	prefix := p.prefixParslets[p.currToken.Type]
 	if prefix == nil {
+		p.noPrefixParsletError(p.currToken.Type)
 		return nil
 	}
 
@@ -128,6 +134,11 @@ func (p *Parser) synchronize() {
 			p.nextToken()
 		}
 	}
+}
+
+func (p *Parser) noPrefixParsletError(tt token.TokenType) {
+	msg := fmt.Sprintf(ERR_NO_PREFIX_PARSLET_FOUND, tt)
+	p.error(msg)
 }
 
 func (p *Parser) expectPeek(tt token.TokenType, errMsg string) bool {

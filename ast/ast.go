@@ -82,7 +82,7 @@ func (r *ReturnStmt) String() string {
 }
 
 type ExpressionStmt struct {
-	Token      token.Token
+	Token      token.Token // first token of Expression
 	Expression Expression
 }
 
@@ -120,3 +120,22 @@ type IntLiteralExpr struct {
 func (i *IntLiteralExpr) expressionNode()      {}
 func (i *IntLiteralExpr) TokenLiteral() string { return i.Token.Literal }
 func (i *IntLiteralExpr) String() string       { return i.TokenLiteral() }
+
+type PrefixExpr struct {
+	Token    token.Token // prefix token
+	Operator string
+	Right    Expression
+}
+
+func (p *PrefixExpr) expressionNode()      {}
+func (p *PrefixExpr) TokenLiteral() string { return p.Token.Literal }
+func (p *PrefixExpr) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(p.TokenLiteral())
+	out.WriteString(p.Right.String())
+	out.WriteString(")")
+
+	return out.String()
+}

@@ -196,6 +196,54 @@ func TestIntLiteral(t *testing.T) {
 	testIntLiteralExpression(t, expressionStmt.Expression, wantInt)
 }
 
+func TestParseingPrefixExpressions(t *testing.T) {
+	tt := []struct {
+		source   string
+		operator string
+		value    int64
+	}{
+		{"!5", "!", 5},
+		{"-20", "-", 20},
+	}
+
+	for _, tc := range tt {
+		program := parse(t, tc.source)
+
+		if program == nil {
+			t.Fatal("ParseProgram() returned 'nil'.")
+		}
+
+		wantLen := 1
+		if len(program.Statements) != wantLen {
+			t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+		}
+
+		stmt := program.Statements[0]
+		expressionStmt, ok := stmt.(*ast.ExpressionStmt)
+		if !ok {
+			t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+		}
+		if expressionStmt.TokenLiteral() != tc.operator {
+			t.Errorf("Wrong TokenLiteral, want %q, got %q.", tc.operator, expressionStmt.TokenLiteral())
+		}
+
+		expr := expressionStmt.Expression
+		prefixExpr, ok := expr.(*ast.PrefixExpr)
+		if !ok {
+			t.Fatalf("expr is not *ast.PrefixExpr. Got %T.", expr)
+		}
+		if prefixExpr.TokenLiteral() != tc.operator {
+			t.Errorf("Wrong TokenLiteral, want %q, got %q.", tc.operator, expressionStmt.TokenLiteral())
+		}
+		if prefixExpr.Operator != tc.operator {
+			t.Errorf("Wrong Operator, want %q, got %q.", tc.operator, prefixExpr.Operator)
+		}
+
+		testIntLiteralExpression(t, prefixExpr.Right, tc.value)
+
+	}
+}
+
 func ensureNoParserErrors(t testing.TB, p *parser.Parser) {
 	t.Helper()
 	errors := p.Errors()
