@@ -29,7 +29,11 @@ func (p *Program) String() string {
 	var out bytes.Buffer
 
 	for _, stmt := range p.Statements {
-		out.WriteString(stmt.String())
+		if stmt == nil {
+			out.WriteString("nil")
+		} else {
+			out.WriteString(stmt.String())
+		}
 		out.WriteString("\n")
 	}
 
@@ -87,7 +91,11 @@ func (e *ExpressionStmt) TokenLiteral() string { return e.Token.Literal }
 func (e *ExpressionStmt) String() string {
 	var out bytes.Buffer
 
-	out.WriteString(e.Expression.String())
+	if e.Expression == nil {
+		out.WriteString("nil")
+	} else {
+		out.WriteString(e.Expression.String())
+	}
 	out.WriteString(";")
 
 	return out.String()
@@ -102,9 +110,7 @@ type IdentifierExpr struct {
 
 func (i *IdentifierExpr) expressionNode()      {}
 func (i *IdentifierExpr) TokenLiteral() string { return i.Token.Literal }
-func (i *IdentifierExpr) String() string {
-	return i.Value
-}
+func (i *IdentifierExpr) String() string       { return i.Value }
 
 type IntLiteralExpr struct {
 	Token token.Token
@@ -113,6 +119,4 @@ type IntLiteralExpr struct {
 
 func (i *IntLiteralExpr) expressionNode()      {}
 func (i *IntLiteralExpr) TokenLiteral() string { return i.Token.Literal }
-func (i *IntLiteralExpr) String() string {
-	return i.TokenLiteral()
-}
+func (i *IntLiteralExpr) String() string       { return i.TokenLiteral() }
