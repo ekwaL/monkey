@@ -19,6 +19,17 @@ const (
 	CALL        // function()
 )
 
+var precedences = map[token.TokenType]int{
+	token.EQUAL_EQUAL: EQUALS,
+	token.NOT_EQUAL:   EQUALS,
+	token.LESS:        LESSGREATER,
+	token.GREATER:     LESSGREATER,
+	token.PLUS:        SUM,
+	token.MINUS:       SUM,
+	token.SLASH:       PRODUCT,
+	token.STAR:        PRODUCT,
+}
+
 const ERR_NO_PREFIX_PARSLET_FOUND = "No prefix parslet found for %q."
 
 type (
@@ -54,6 +65,15 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.BANG, p.parsePrefixExpr)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpr)
 
+	p.infixParslets = make(map[token.TokenType]infixParslet)
+	p.registerInfix(token.PLUS, p.parseInfixExpr)
+	p.registerInfix(token.MINUS, p.parseInfixExpr)
+	p.registerInfix(token.STAR, p.parseInfixExpr)
+	p.registerInfix(token.SLASH, p.parseInfixExpr)
+	p.registerInfix(token.GREATER, p.parseInfixExpr)
+	p.registerInfix(token.LESS, p.parseInfixExpr)
+	p.registerInfix(token.EQUAL_EQUAL, p.parseInfixExpr)
+	p.registerInfix(token.NOT_EQUAL, p.parseInfixExpr)
 	return &p
 }
 
@@ -99,6 +119,19 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	}
 
 	leftExpr := prefix()
+
+	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
+		infix := p.infixParslets[p.peekToken.Type]
+
+		if infix == nil {
+			return leftExpr
+		}
+
+		p.nextToken()
+
+		leftExpr = infix(leftExpr)
+	}
+
 	return leftExpr
 }
 
@@ -149,6 +182,22 @@ func (p *Parser) expectPeek(tt token.TokenType, errMsg string) bool {
 		p.error(errMsg)
 		return false
 	}
+}
+
+func (p *Parser) peekPrecedence() int {
+	if p, ok := precedences[p.peekToken.Type]; ok {
+		return p
+	}
+
+	return LOWEST
+}
+
+func (p *Parser) currPrecedence() int {
+	if p, ok := precedences[p.currToken.Type]; ok {
+		return p
+	}
+
+	return LOWEST
 }
 
 func (p *Parser) registerPrefix(tt token.TokenType, fn prefixParslet) {

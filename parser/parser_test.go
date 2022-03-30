@@ -5,6 +5,7 @@ import (
 	"monkey/lexer"
 	"monkey/parser"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -240,7 +241,101 @@ func TestParseingPrefixExpressions(t *testing.T) {
 		}
 
 		testIntLiteralExpression(t, prefixExpr.Right, tc.value)
+	}
+}
 
+func TestParseingInfixExpressions(t *testing.T) {
+	tt := []struct {
+		source   string
+		left     int64
+		operator string
+		right    int64
+	}{
+		{"5 + 6;", 5, "+", 6},
+		{"5 - 6;", 5, "-", 6},
+		{"5 * 6;", 5, "*", 6},
+		{"5 / 6;", 5, "/", 6},
+		{"5 > 6;", 5, ">", 6},
+		{"5 < 6;", 5, "<", 6},
+		{"5 == 6;", 5, "==", 6},
+		{"5 != 6;", 5, "!=", 6},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.source, func(t *testing.T) {
+			program := parse(t, tc.source)
+
+			if program == nil {
+				t.Fatal("ParseProgram() returned 'nil'.")
+			}
+
+			wantLen := 1
+			if len(program.Statements) != wantLen {
+				t.Fatalf("program.Statements len is %d, want %d .",
+					len(program.Statements), wantLen)
+			}
+
+			stmt := program.Statements[0]
+			expressionStmt, ok := stmt.(*ast.ExpressionStmt)
+			if !ok {
+				t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+			}
+
+			expr := expressionStmt.Expression
+			infixExpr, ok := expr.(*ast.InfixExpr)
+			if !ok {
+				t.Fatalf("expr is not *ast.InfixExpr. Got %T.", expr)
+			}
+			if infixExpr.TokenLiteral() != tc.operator {
+				t.Errorf("Wrong InfixExpr.TokenLiteral, want %q, got %q.",
+					tc.operator, expressionStmt.TokenLiteral())
+			}
+			if infixExpr.Operator != tc.operator {
+				t.Errorf("Wrong Operator, want %q, got %q.",
+					tc.operator, infixExpr.Operator)
+			}
+
+			testIntLiteralExpression(t, infixExpr.Left, tc.left)
+			testIntLiteralExpression(t, infixExpr.Right, tc.right)
+		})
+	}
+}
+
+func TestOperatorPrecedenceParsing(t *testing.T) {
+	tt := []struct {
+		source string
+		want   string
+	}{
+		{"-a + b;", "((-a) + b)"},
+		{"-a * b;", "((-a) * b)"},
+		{"!-a;", "(!(-a))"},
+		{"a + b + c;", "((a + b) + c)"},
+		{"a + b - c;", "((a + b) - c)"},
+		{"a * b * c;", "((a * b) * c)"},
+		{"a * b / c;", "((a * b) / c)"},
+		{"a + b / c;", "(a + (b / c))"},
+		{"a * b / c;", "((a * b) / c)"},
+		{"a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"},
+		{"3 + 4; -5 * 5", "(3 + 4);\n((-5) * 5)"},
+		{"5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"},
+		{"5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"},
+		{"3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))"},
+		{"3 / 4 - 5 != -2 / 5 / -6 ", "(((3 / 4) - 5) != (((-2) / 5) / (-6)))"},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.source, func(t *testing.T) {
+			program := parse(t, tc.source)
+
+			if program == nil {
+				t.Fatal("ParseProgram() returned 'nil'.")
+			}
+
+			got := strings.Trim(program.String(), ";\n")
+			if got != tc.want {
+				t.Errorf("Program.String() is wrong, want %q, got %q.", tc.want, got)
+			}
+		})
 	}
 }
 
