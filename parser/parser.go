@@ -26,7 +26,8 @@ type (
 type Parser struct {
 	l *lexer.Lexer
 
-	errors []string
+	errors   []string
+	needSync bool
 
 	currToken token.Token
 	peekToken token.Token
@@ -55,13 +56,16 @@ func (p *Parser) ParseProgram() *ast.Program {
 	prog := &ast.Program{}
 
 	for p.currToken.Type != token.EOF {
+
 		stmt := p.parseStatement()
 
-		if stmt != nil {
+		if p.needSync {
+			p.synchronize()
+		} else if stmt != nil {
 			prog.Statements = append(prog.Statements, stmt)
-		}
 
-		p.nextToken()
+			p.nextToken()
+		}
 	}
 
 	return prog
@@ -107,6 +111,23 @@ func (p *Parser) peekTokenIs(tt token.TokenType) bool {
 
 func (p *Parser) error(msg string) {
 	p.errors = append(p.errors, msg)
+	p.needSync = true
+}
+
+func (p *Parser) synchronize() {
+	p.needSync = false
+	p.nextToken()
+	for p.currToken.Type != token.EOF {
+		switch p.currToken.Type {
+		case token.SEMICOLON:
+			p.nextToken()
+			return
+		case token.LET, token.FUNCTION, token.RETURN, token.IF:
+			return
+		default:
+			p.nextToken()
+		}
+	}
 }
 
 func (p *Parser) expectPeek(tt token.TokenType, errMsg string) bool {
