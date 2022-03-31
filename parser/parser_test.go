@@ -40,55 +40,9 @@ func TestParser(t *testing.T) {
 		if !testLetStatement(t, stmt, tc.expectedIdentifier) {
 			return
 		}
-		testIntLiteralExpression(t, stmt.(*ast.LetStmt).Value, tc.expectedValue)
+		testIdentifierOrLiteralExpr(t, stmt.(*ast.LetStmt).Value, tc.expectedValue)
 	}
 
-}
-
-func testLetStatement(t testing.TB, stmt ast.Statement, want string) bool {
-	t.Helper()
-
-	if stmt.TokenLiteral() != "let" {
-		t.Errorf("Token literal is not 'let', got %q.", stmt.TokenLiteral())
-		return false
-	}
-
-	letStmt, ok := stmt.(*ast.LetStmt)
-
-	if !ok {
-		t.Errorf("Statement is not LetStmt, got %T.", stmt)
-		return false
-	}
-
-	if letStmt.Name.Value != want {
-		t.Errorf("Wrong LetStmt Name Value. Got %q, want %q.", letStmt.Name.Value, want)
-		return false
-	}
-
-	if letStmt.Name.TokenLiteral() != want {
-		t.Errorf("Wrong LetStmt Name. Got %q, want %q.", letStmt.Name.TokenLiteral(), want)
-		return false
-	}
-
-	return true
-}
-
-func testIntLiteralExpression(t testing.TB, expr ast.Expression, want int64) {
-	t.Helper()
-
-	intLiteralExpr, ok := expr.(*ast.IntLiteralExpr)
-	if !ok {
-		t.Errorf("Expression is not IntLiteralExpr, got %T.", expr)
-	}
-
-	if intLiteralExpr.Value != want {
-		t.Errorf("Wrong IntLiteralExpr Value. Got %d, want %d.", intLiteralExpr.Value, want)
-	}
-
-	wantStr := strconv.FormatInt(want, 10)
-	if intLiteralExpr.TokenLiteral() != wantStr {
-		t.Errorf("Wrong TokenLiteral(). Got %q, want %q.", intLiteralExpr.TokenLiteral(), wantStr)
-	}
 }
 
 func TestReturnStatement(t *testing.T) {
@@ -119,7 +73,7 @@ func TestReturnStatement(t *testing.T) {
 			t.Errorf("Wrong TokenLiteral, want 'return', got %q.", returnStmt.TokenLiteral())
 		}
 
-		testIntLiteralExpression(t, returnStmt.Value, expectedValue)
+		testIdentifierOrLiteralExpr(t, returnStmt.Value, expectedValue)
 	}
 }
 
@@ -148,24 +102,7 @@ func TestIdentifierExpressionStatement(t *testing.T) {
 		t.Errorf("Wrong TokenLiteral, want %q, got %q.", want, expressionStmt.TokenLiteral())
 	}
 
-	testIdentifierExpression(t, expressionStmt.Expression, want)
-}
-
-func testIdentifierExpression(t testing.TB, expr ast.Expression, want string) {
-	identExpr, ok := expr.(*ast.IdentifierExpr)
-	if !ok {
-		t.Errorf("Expression is not IdentifierExpr, got %T.", expr)
-	}
-
-	if identExpr.Value != want {
-		t.Errorf("Wrong IdentifierExpr Value. Got %q, want %q.", identExpr.Value, want)
-	}
-
-	if identExpr.TokenLiteral() != want {
-		t.Errorf("Wrong TokenLiteral, want %q, got %q.", want, identExpr.TokenLiteral())
-	}
-
-	t.Helper()
+	testIdentifierOrLiteralExpr(t, expressionStmt.Expression, want)
 }
 
 func TestIntLiteral(t *testing.T) {
@@ -194,7 +131,7 @@ func TestIntLiteral(t *testing.T) {
 		t.Errorf("Wrong TokenLiteral, want %q, got %q.", want, expressionStmt.TokenLiteral())
 	}
 
-	testIntLiteralExpression(t, expressionStmt.Expression, wantInt)
+	testIdentifierOrLiteralExpr(t, expressionStmt.Expression, wantInt)
 }
 
 func TestParseingPrefixExpressions(t *testing.T) {
@@ -240,7 +177,7 @@ func TestParseingPrefixExpressions(t *testing.T) {
 			t.Errorf("Wrong Operator, want %q, got %q.", tc.operator, prefixExpr.Operator)
 		}
 
-		testIntLiteralExpression(t, prefixExpr.Right, tc.value)
+		testIdentifierOrLiteralExpr(t, prefixExpr.Right, tc.value)
 	}
 }
 
@@ -282,21 +219,7 @@ func TestParseingInfixExpressions(t *testing.T) {
 			}
 
 			expr := expressionStmt.Expression
-			infixExpr, ok := expr.(*ast.InfixExpr)
-			if !ok {
-				t.Fatalf("expr is not *ast.InfixExpr. Got %T.", expr)
-			}
-			if infixExpr.TokenLiteral() != tc.operator {
-				t.Errorf("Wrong InfixExpr.TokenLiteral, want %q, got %q.",
-					tc.operator, expressionStmt.TokenLiteral())
-			}
-			if infixExpr.Operator != tc.operator {
-				t.Errorf("Wrong Operator, want %q, got %q.",
-					tc.operator, infixExpr.Operator)
-			}
-
-			testIntLiteralExpression(t, infixExpr.Left, tc.left)
-			testIntLiteralExpression(t, infixExpr.Right, tc.right)
+			testInfixExpr(t, expr, tc.left, tc.operator, tc.right)
 		})
 	}
 }
@@ -337,6 +260,107 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Helpers
+
+func testInfixExpr(
+	t testing.TB,
+	expr ast.Expression,
+	left interface{},
+	operator string,
+	right interface{}) {
+	t.Helper()
+	infixExpr, ok := expr.(*ast.InfixExpr)
+	if !ok {
+		t.Fatalf("expr is not *ast.InfixExpr. Got %T.", expr)
+	}
+	if infixExpr.TokenLiteral() != operator {
+		t.Errorf("Wrong InfixExpr.TokenLiteral, want %q, got %q.",
+			operator, infixExpr.TokenLiteral())
+	}
+	if infixExpr.Operator != operator {
+		t.Errorf("Wrong Operator, want %q, got %q.",
+			operator, infixExpr.Operator)
+	}
+
+	testIdentifierOrLiteralExpr(t, infixExpr.Left, left)
+	testIdentifierOrLiteralExpr(t, infixExpr.Right, right)
+}
+
+func testIdentifierOrLiteralExpr(t testing.TB, expr ast.Expression, want interface{}) {
+	t.Helper()
+	switch w := want.(type) {
+	case int:
+		testIntLiteralExpression(t, expr, int64(w))
+	case int64:
+		testIntLiteralExpression(t, expr, w)
+	case string:
+		testIdentifierExpression(t, expr, string(w))
+	}
+}
+
+func testIdentifierExpression(t testing.TB, expr ast.Expression, want string) {
+	identExpr, ok := expr.(*ast.IdentifierExpr)
+	if !ok {
+		t.Errorf("Expression is not IdentifierExpr, got %T.", expr)
+	}
+
+	if identExpr.Value != want {
+		t.Errorf("Wrong IdentifierExpr Value. Got %q, want %q.", identExpr.Value, want)
+	}
+
+	if identExpr.TokenLiteral() != want {
+		t.Errorf("Wrong TokenLiteral, want %q, got %q.", want, identExpr.TokenLiteral())
+	}
+
+	t.Helper()
+}
+
+func testIntLiteralExpression(t testing.TB, expr ast.Expression, want int64) {
+	t.Helper()
+
+	intLiteralExpr, ok := expr.(*ast.IntLiteralExpr)
+	if !ok {
+		t.Errorf("Expression is not IntLiteralExpr, got %T.", expr)
+	}
+
+	if intLiteralExpr.Value != want {
+		t.Errorf("Wrong IntLiteralExpr Value. Got %d, want %d.", intLiteralExpr.Value, want)
+	}
+
+	wantStr := strconv.FormatInt(want, 10)
+	if intLiteralExpr.TokenLiteral() != wantStr {
+		t.Errorf("Wrong TokenLiteral(). Got %q, want %q.", intLiteralExpr.TokenLiteral(), wantStr)
+	}
+}
+
+func testLetStatement(t testing.TB, stmt ast.Statement, want string) bool {
+	t.Helper()
+
+	if stmt.TokenLiteral() != "let" {
+		t.Errorf("Token literal is not 'let', got %q.", stmt.TokenLiteral())
+		return false
+	}
+
+	letStmt, ok := stmt.(*ast.LetStmt)
+
+	if !ok {
+		t.Errorf("Statement is not LetStmt, got %T.", stmt)
+		return false
+	}
+
+	if letStmt.Name.Value != want {
+		t.Errorf("Wrong LetStmt Name Value. Got %q, want %q.", letStmt.Name.Value, want)
+		return false
+	}
+
+	if letStmt.Name.TokenLiteral() != want {
+		t.Errorf("Wrong LetStmt Name. Got %q, want %q.", letStmt.Name.TokenLiteral(), want)
+		return false
+	}
+
+	return true
 }
 
 func ensureNoParserErrors(t testing.TB, p *parser.Parser) {
