@@ -121,6 +121,15 @@ func (i *IntLiteralExpr) expressionNode()      {}
 func (i *IntLiteralExpr) TokenLiteral() string { return i.Token.Literal }
 func (i *IntLiteralExpr) String() string       { return i.TokenLiteral() }
 
+type BoolLiteralExpr struct {
+	Token token.Token
+	Value bool
+}
+
+func (b *BoolLiteralExpr) expressionNode()      {}
+func (b *BoolLiteralExpr) TokenLiteral() string { return b.Token.Literal }
+func (b *BoolLiteralExpr) String() string       { return b.TokenLiteral() }
+
 type PrefixExpr struct {
 	Token    token.Token // prefix token
 	Operator string
