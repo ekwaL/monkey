@@ -86,6 +86,75 @@ func TestAstString(t *testing.T) {
 					},
 				},
 			},
+			// if (!true) { 10; } else { false; };
+			&ast.ExpressionStmt{
+				Token: token.Token{
+					Type:    token.IF,
+					Literal: "if",
+				},
+				Expression: &ast.IfExpr{
+					Token: token.Token{
+						Type:    token.IF,
+						Literal: "if",
+					},
+					Condition: &ast.PrefixExpr{
+						Token: token.Token{
+							Type:    token.BANG,
+							Literal: "!",
+						},
+						Operator: "!",
+						Right: &ast.BoolLiteralExpr{
+							Token: token.Token{
+								Type:    token.TRUE,
+								Literal: "true",
+							},
+							Value: false,
+						},
+					},
+					Then: &ast.BlockStmt{
+						Token: token.Token{
+							Type:    token.LBRACE,
+							Literal: "{",
+						},
+						Statements: []ast.Statement{
+							&ast.ExpressionStmt{
+								Token: token.Token{
+									Type:    token.INT,
+									Literal: "10",
+								},
+								Expression: &ast.IntLiteralExpr{
+									Token: token.Token{
+										Type:    token.INT,
+										Literal: "10",
+									},
+									Value: 10,
+								},
+							},
+						},
+					},
+					Else: &ast.BlockStmt{
+						Token: token.Token{
+							Type:    token.LBRACE,
+							Literal: "{",
+						},
+						Statements: []ast.Statement{
+							&ast.ExpressionStmt{
+								Token: token.Token{
+									Type:    token.FALSE,
+									Literal: "false",
+								},
+								Expression: &ast.BoolLiteralExpr{
+									Token: token.Token{
+										Type:    token.FALSE,
+										Literal: "false",
+									},
+									Value: false,
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -94,6 +163,7 @@ func TestAstString(t *testing.T) {
 return 123;
 999;
 (!(false == true));
+if (!true) { 10; } else { false; };
 `
 	if program.String() != want {
 		t.Errorf("Wrong program.String() output. Want %q, got %q.", want, program.String())

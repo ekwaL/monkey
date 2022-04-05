@@ -101,6 +101,24 @@ func (e *ExpressionStmt) String() string {
 	return out.String()
 }
 
+type BlockStmt struct {
+	Token      token.Token // '{'
+	Statements []Statement
+}
+
+func (b *BlockStmt) statementNode()       {}
+func (b *BlockStmt) TokenLiteral() string { return b.Token.Literal }
+func (b *BlockStmt) String() string {
+	var out bytes.Buffer
+	out.WriteString("{ ")
+	for _, s := range b.Statements {
+		out.WriteString(s.String())
+	}
+	out.WriteString(" }")
+
+	return out.String()
+}
+
 // Expressions
 
 type IdentifierExpr struct {
@@ -166,6 +184,29 @@ func (p *InfixExpr) String() string {
 	out.WriteString(" " + p.Operator + " ")
 	out.WriteString(p.Right.String())
 	out.WriteString(")")
+
+	return out.String()
+}
+
+type IfExpr struct {
+	Token     token.Token
+	Condition Expression
+	Then      Statement
+	Else      Statement
+}
+
+func (i *IfExpr) expressionNode()      {}
+func (i *IfExpr) TokenLiteral() string { return i.Token.Literal }
+func (i *IfExpr) String() string {
+	var out bytes.Buffer
+	out.WriteString("if ")
+	out.WriteString(i.Condition.String())
+	out.WriteString(" ")
+	out.WriteString(i.Then.String())
+	if i.Else != nil {
+		out.WriteString(" else ")
+		out.WriteString(i.Else.String())
+	}
 
 	return out.String()
 }

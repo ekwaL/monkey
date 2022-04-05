@@ -77,6 +77,71 @@ func TestReturnStatement(t *testing.T) {
 	}
 }
 
+func TestBlockStatement(t *testing.T) {
+
+}
+
+func TestIfExpression(t *testing.T) {
+	source := `
+		if (5 > 10) {
+			20;
+		} else true;`
+	program := parse(t, source)
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	wantLen := 1
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	exprStmt, ok := stmt.(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+	}
+	if exprStmt.TokenLiteral() != "if" {
+		t.Errorf("Wrong TokenLiteral, want 'if', got %q.", exprStmt.TokenLiteral())
+	}
+
+	expr := exprStmt.Expression
+	ifExpr, ok := expr.(*ast.IfExpr)
+	if !ok {
+		t.Fatalf("expr is not *ast.IfExpr. Got %T.", expr)
+	}
+	if ifExpr.TokenLiteral() != "if" {
+		t.Errorf("Wrong TokenLiteral, want 'if', got %q.", exprStmt.TokenLiteral())
+	}
+	testInfixExpr(t, ifExpr.Condition, 5, ">", 10)
+
+	thenBranch, ok := ifExpr.Then.(*ast.BlockStmt)
+	if !ok {
+		t.Fatalf("Then-branch is not a BlockStmt, got %T", ifExpr.Then)
+	}
+	if len(thenBranch.Statements) != 1 {
+		t.Errorf("Then-branch block should have 1 statement, got %d",
+			len(thenBranch.Statements))
+	}
+
+	cons, ok := thenBranch.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("First then-branch statement is not a ExpressionStmt, got %T",
+			thenBranch.Statements[0])
+	}
+	testIdentifierOrLiteralExpr(t, cons.Expression, 20)
+
+	elseBranch, ok := ifExpr.Else.(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("Else-branch is not *ast.ExpressionStmt. Got %T.", ifExpr.Else)
+	}
+	if elseBranch.TokenLiteral() != "true" {
+		t.Errorf("Wrong TokenLiteral, want 'true', got %q.", elseBranch.TokenLiteral())
+	}
+	testIdentifierOrLiteralExpr(t, elseBranch.Expression, true)
+}
+
 func TestIdentifierExpressionStatement(t *testing.T) {
 	source := "foobar;"
 

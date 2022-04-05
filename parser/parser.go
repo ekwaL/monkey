@@ -67,6 +67,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.BANG, p.parsePrefixExpr)
 	p.registerPrefix(token.MINUS, p.parsePrefixExpr)
 	p.registerPrefix(token.LPAREN, p.parseGroupingExpr)
+	p.registerPrefix(token.IF, p.parseIfExpr)
 
 	p.infixParslets = make(map[token.TokenType]infixParslet)
 	p.registerInfix(token.PLUS, p.parseInfixExpr)
@@ -109,6 +110,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseLetStmt()
 	case token.RETURN:
 		return p.parseReturnStmt()
+	case token.LBRACE:
+		return p.parseBlockStmt()
 	default:
 		return p.parseExpressionStmt()
 	}
