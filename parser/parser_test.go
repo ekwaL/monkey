@@ -292,6 +292,11 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"false;", "false"},
 		{"3 > 5 == false;", "((3 > 5) == false)"},
 		{"true != 1 > 2;", "(true != (1 > 2))"},
+		{"1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"},
+		{"(5 + 5) * 2", "((5 + 5) * 2)"},
+		{"2 / (1 + 1)", "(2 / (1 + 1))"},
+		{"-(1 + 1)", "(-(1 + 1))"},
+		{"!(true != false)", "(!(true != false))"},
 	}
 
 	for _, tc := range tt {

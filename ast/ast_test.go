@@ -57,12 +57,33 @@ func TestAstString(t *testing.T) {
 					Type:    token.INT,
 					Literal: "false",
 				},
-				Expression: &ast.BoolLiteralExpr{
+				Expression: &ast.PrefixExpr{
 					Token: token.Token{
-						Type:    token.INT,
-						Literal: "false",
+						Type:    token.BANG,
+						Literal: "!",
 					},
-					Value: false,
+					Operator: "!",
+					Right: &ast.InfixExpr{
+						Token: token.Token{
+							Type:    token.EQUAL_EQUAL,
+							Literal: "==",
+						},
+						Left: &ast.BoolLiteralExpr{
+							Token: token.Token{
+								Type:    token.FALSE,
+								Literal: "false",
+							},
+							Value: false,
+						},
+						Operator: "==",
+						Right: &ast.BoolLiteralExpr{
+							Token: token.Token{
+								Type:    token.TRUE,
+								Literal: "true",
+							},
+							Value: true,
+						},
+					},
 				},
 			},
 		},
@@ -72,7 +93,7 @@ func TestAstString(t *testing.T) {
 		`let num = 10;
 return 123;
 999;
-false;
+(!(false == true));
 `
 	if program.String() != want {
 		t.Errorf("Wrong program.String() output. Want %q, got %q.", want, program.String())
