@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"monkey/lexer"
-	"monkey/token"
+	"monkey/parser"
 )
 
 const ReplWelcomeMessage = `
@@ -43,15 +43,27 @@ func (r *REPL) Start() {
 
 		line := scanner.Text()
 		l := lexer.New(line)
+		p := parser.New(l)
 
-		for tok := l.NextToken(); tok.Type != token.EOF; tok = l.NextToken() {
-			io.WriteString(r.out, fmt.Sprintf("%+v\n", tok))
+		program := p.ParseProgram()
+		if len(p.Errors()) != 0 {
+			printParseErrors(r.out, p.Errors())
 		}
+
+		io.WriteString(r.out, program.String())
+		io.WriteString(r.out, "\n")
 	}
 }
 
 func (r *REPL) printWelcomeMessage() {
 	io.WriteString(r.out, ReplWelcomeMessage)
+}
+
+func printParseErrors(out io.Writer, errors []string) {
+	io.WriteString(out, "Errors found while parsing:\n")
+	for _, e := range errors {
+		io.WriteString(out, "\t"+e+"\n")
+	}
 }
 
 func prompt(lineNumber int) string {
