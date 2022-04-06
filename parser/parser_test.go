@@ -188,6 +188,49 @@ func TestFunctionExpression(t *testing.T) {
 	testInfixExpr(t, cons.Expression, "i", "-", "j")
 }
 
+func TestCallExpression(t *testing.T) {
+	source := `
+		fun(1, true == false);`
+	program := parse(t, source)
+	for _, s := range program.Statements {
+		println(s)
+	}
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	wantLen := 1
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	exprStmt, ok := stmt.(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+	}
+	if exprStmt.TokenLiteral() != "fun" {
+		t.Errorf("Wrong TokenLiteral, want 'fun', got %q.", exprStmt.TokenLiteral())
+	}
+
+	expr := exprStmt.Expression
+	callExpr, ok := expr.(*ast.CallExpr)
+	if !ok {
+		t.Fatalf("expr is not *ast.CallExpr. Got %T.", expr)
+	}
+	if callExpr.TokenLiteral() != "(" {
+		t.Errorf("Wrong TokenLiteral, want '(', got %q.", callExpr.TokenLiteral())
+	}
+
+	if len(callExpr.Arguments) != 2 {
+		t.Errorf("Wrong parameters count: want 1, got %d", len(callExpr.Arguments))
+	}
+	testIdentifierOrLiteralExpr(t, callExpr.Arguments[0], 1)
+	testInfixExpr(t, callExpr.Arguments[1], true, "==", false)
+	testIdentifierOrLiteralExpr(t, callExpr.Function, "fun")
+}
+
 func TestIdentifierExpressionStatement(t *testing.T) {
 	source := "foobar;"
 
@@ -408,6 +451,9 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"2 / (1 + 1)", "(2 / (1 + 1))"},
 		{"-(1 + 1)", "(-(1 + 1))"},
 		{"!(true != false)", "(!(true != false))"},
+		{"1 + a(b * c) - 3", "((1 + a((b * c))) - 3)"},
+		{"a(1, 2, b, a(b * c, 3))", "a(1, 2, b, a((b * c), 3))"},
+		{"a(1 + 2 / 3 - 4)", "a(((1 + (2 / 3)) - 4))"},
 	}
 
 	for _, tc := range tt {

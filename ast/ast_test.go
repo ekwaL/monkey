@@ -206,6 +206,57 @@ func TestAstString(t *testing.T) {
 					},
 				},
 			},
+
+			// hello(1, 2 + 3);
+			&ast.ExpressionStmt{
+				Token: token.Token{
+					Type:    token.IDENTIFIER,
+					Literal: "sum",
+				},
+				Expression: &ast.CallExpr{
+					Token: token.Token{
+						Type:    token.LPAREN,
+						Literal: "(",
+					},
+					Function: &ast.IdentifierExpr{
+						Token: token.Token{
+							Type:    token.IDENTIFIER,
+							Literal: "sum",
+						},
+						Value: "sum",
+					},
+					Arguments: []ast.Expression{
+						&ast.IntLiteralExpr{
+							Token: token.Token{
+								Type:    token.INT,
+								Literal: "1",
+							},
+							Value: 1,
+						},
+						&ast.InfixExpr{
+							Token: token.Token{
+								Type:    token.PLUS,
+								Literal: "+",
+							},
+							Left: &ast.IntLiteralExpr{
+								Token: token.Token{
+									Type:    token.INT,
+									Literal: "2",
+								},
+								Value: 2,
+							},
+							Operator: "+",
+							Right: &ast.IntLiteralExpr{
+								Token: token.Token{
+									Type:    token.INT,
+									Literal: "3",
+								},
+								Value: 3,
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -216,6 +267,7 @@ return 123;
 (!(false == true));
 if (!true) { 10; } else { false; };
 fn(x, y) { 10; };
+sum(1, (2 + 3));
 `
 	if program.String() != want {
 		t.Errorf("Wrong program.String() output. Want %q, got %q.", want, program.String())

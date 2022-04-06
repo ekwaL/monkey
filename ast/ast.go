@@ -236,3 +236,29 @@ func (f *FunctionExpr) String() string {
 
 	return out.String()
 }
+
+type CallExpr struct {
+	Token     token.Token // '('
+	Function  Expression  // IdentifierExpr || FunctionExpr
+	Arguments []Expression
+}
+
+func (c *CallExpr) expressionNode()      {}
+func (c *CallExpr) TokenLiteral() string { return c.Token.Literal }
+func (c *CallExpr) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(c.Function.String())
+	out.WriteString("(")
+
+	last := len(c.Arguments) - 1
+	for i, arg := range c.Arguments {
+		out.WriteString(arg.String())
+		if i != last {
+			out.WriteString(", ")
+		}
+	}
+
+	out.WriteString(")")
+	return out.String()
+}

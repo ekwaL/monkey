@@ -28,6 +28,7 @@ var precedences = map[token.TokenType]int{
 	token.MINUS:       SUM,
 	token.SLASH:       PRODUCT,
 	token.STAR:        PRODUCT,
+	token.LPAREN:      CALL,
 }
 
 const ERR_NO_PREFIX_PARSLET_FOUND = "No prefix parslet found for %q."
@@ -79,6 +80,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.LESS, p.parseInfixExpr)
 	p.registerInfix(token.EQUAL_EQUAL, p.parseInfixExpr)
 	p.registerInfix(token.NOT_EQUAL, p.parseInfixExpr)
+	p.registerInfix(token.LPAREN, p.parseCallExpr)
 	return &p
 }
 
