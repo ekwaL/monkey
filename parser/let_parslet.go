@@ -29,11 +29,8 @@ func (p *Parser) parseLetStmt() *ast.LetStmt {
 		return nil
 	}
 
-	if p.peekToken.Type != token.SEMICOLON {
-		p.error(ERR_LET_NO_SEMI_AFTER_LET_STMT)
+	if !p.expectPeek(token.SEMICOLON, ERR_LET_NO_SEMI_AFTER_LET_STMT) {
 		return nil
-	} else {
-		p.nextToken()
 	}
 
 	return &ast.LetStmt{Token: tok, Name: name, Value: value}
