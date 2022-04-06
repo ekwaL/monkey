@@ -77,10 +77,6 @@ func TestReturnStatement(t *testing.T) {
 	}
 }
 
-func TestBlockStatement(t *testing.T) {
-
-}
-
 func TestIfExpression(t *testing.T) {
 	source := `
 		if (5 > 10) {
