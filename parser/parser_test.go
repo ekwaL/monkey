@@ -112,7 +112,7 @@ func TestIfExpression(t *testing.T) {
 		t.Fatalf("expr is not *ast.IfExpr. Got %T.", expr)
 	}
 	if ifExpr.TokenLiteral() != "if" {
-		t.Errorf("Wrong TokenLiteral, want 'if', got %q.", exprStmt.TokenLiteral())
+		t.Errorf("Wrong TokenLiteral, want 'if', got %q.", ifExpr.TokenLiteral())
 	}
 	testInfixExpr(t, ifExpr.Condition, 5, ">", 10)
 
