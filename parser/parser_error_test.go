@@ -15,8 +15,17 @@ func TestParserError(t *testing.T) {
 		let z = 10;
 		let = 10;
 		let 838383;
+		if (a > b) true;
+		if a > b true;
+		if (a > b true;
+		if (a > b) { true; } else { 10; };
+		fn { 1 };
+		fn (i, { true };
+		fn (x) { true; };
+		fn (1) { true; };
+		fn (x) true;
+		fn (x) { !true;
 		`
-
 	l := lexer.New(source)
 	p := parser.New(l)
 
@@ -27,6 +36,14 @@ func TestParserError(t *testing.T) {
 		parser.ERR_LET_NO_SEMI_AFTER_LET_STMT,
 		parser.ERR_LET_NO_IDENTIFIER_AFTER_LET,
 		parser.ERR_LET_NO_IDENTIFIER_AFTER_LET,
+		parser.ERR_IF_CONDITION_START_LPAREN,
+		parser.ERR_IF_CONDITION_END_RPAREN,
+		parser.ERR_FN_PARAMETERS_START_LPAREN,
+		fmt.Sprintf(parser.ERR_FN_PARAMETER_SHOULD_BE_IDENTIFIER, "{"),
+		parser.ERR_FN_PARAMETERS_END_RPAREN,
+		fmt.Sprintf(parser.ERR_FN_PARAMETER_SHOULD_BE_IDENTIFIER, "1"),
+		parser.ERR_FN_BODY_START_LBRACE,
+		parser.ERR_FN_BODY_END_RBRACE,
 	}
 
 	errors := p.Errors()

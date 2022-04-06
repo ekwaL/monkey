@@ -155,6 +155,57 @@ func TestAstString(t *testing.T) {
 					},
 				},
 			},
+
+			//fn(x, y) { 10; };
+			&ast.ExpressionStmt{
+				Token: token.Token{
+					Type:    token.FUNCTION,
+					Literal: "fn",
+				},
+				Expression: &ast.FunctionExpr{
+					Token: token.Token{
+						Type:    token.FUNCTION,
+						Literal: "fn",
+					},
+					Parameters: []*ast.IdentifierExpr{
+						{
+							Token: token.Token{
+								Type:    token.IDENTIFIER,
+								Literal: "x",
+							},
+							Value: "x",
+						},
+						{
+							Token: token.Token{
+								Type:    token.IDENTIFIER,
+								Literal: "y",
+							},
+							Value: "y",
+						},
+					},
+					Body: &ast.BlockStmt{
+						Token: token.Token{
+							Type:    token.LBRACE,
+							Literal: "{",
+						},
+						Statements: []ast.Statement{
+							&ast.ExpressionStmt{
+								Token: token.Token{
+									Type:    token.INT,
+									Literal: "10",
+								},
+								Expression: &ast.IntLiteralExpr{
+									Token: token.Token{
+										Type:    token.INT,
+										Literal: "10",
+									},
+									Value: 10,
+								},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -164,6 +215,7 @@ return 123;
 999;
 (!(false == true));
 if (!true) { 10; } else { false; };
+fn(x, y) { 10; };
 `
 	if program.String() != want {
 		t.Errorf("Wrong program.String() output. Want %q, got %q.", want, program.String())

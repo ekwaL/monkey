@@ -210,3 +210,29 @@ func (i *IfExpr) String() string {
 
 	return out.String()
 }
+
+type FunctionExpr struct {
+	Token      token.Token
+	Parameters []*IdentifierExpr
+	Body       *BlockStmt
+}
+
+func (f *FunctionExpr) expressionNode()      {}
+func (f *FunctionExpr) TokenLiteral() string { return f.Token.Literal }
+func (f *FunctionExpr) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("fn(")
+	last := len(f.Parameters) - 1
+	for i, ident := range f.Parameters {
+		out.WriteString(ident.Value)
+		if i != last {
+			out.WriteString(", ")
+		}
+	}
+	out.WriteString(") ")
+
+	out.WriteString(f.Body.String())
+
+	return out.String()
+}

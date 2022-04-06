@@ -142,6 +142,56 @@ func TestIfExpression(t *testing.T) {
 	testIdentifierOrLiteralExpr(t, elseBranch.Expression, true)
 }
 
+func TestFunctionExpression(t *testing.T) {
+	source := `
+		fn(i, j) { i - j; };`
+	program := parse(t, source)
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	wantLen := 1
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	exprStmt, ok := stmt.(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+	}
+	if exprStmt.TokenLiteral() != "fn" {
+		t.Errorf("Wrong TokenLiteral, want 'fn', got %q.", exprStmt.TokenLiteral())
+	}
+
+	expr := exprStmt.Expression
+	fnExpr, ok := expr.(*ast.FunctionExpr)
+	if !ok {
+		t.Fatalf("expr is not *ast.FunctionExpr. Got %T.", expr)
+	}
+	if fnExpr.TokenLiteral() != "fn" {
+		t.Errorf("Wrong TokenLiteral, want 'fn', got %q.", fnExpr.TokenLiteral())
+	}
+
+	if len(fnExpr.Parameters) != 2 {
+		t.Errorf("Wrong parameters count: want 1, got %d", len(fnExpr.Parameters))
+	}
+	testIdentifierOrLiteralExpr(t, fnExpr.Parameters[0], "i")
+	testIdentifierOrLiteralExpr(t, fnExpr.Parameters[1], "j")
+
+	if len(fnExpr.Body.Statements) != 1 {
+		t.Errorf("Wrong body statements count: want 1, got %d", len(fnExpr.Parameters))
+	}
+
+	cons, ok := fnExpr.Body.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("First body statement is not an ExpressionStmt, got %T",
+			fnExpr.Body.Statements[0])
+	}
+	testInfixExpr(t, cons.Expression, "i", "-", "j")
+}
+
 func TestIdentifierExpressionStatement(t *testing.T) {
 	source := "foobar;"
 

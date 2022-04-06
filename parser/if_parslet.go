@@ -16,14 +16,15 @@ func (p *Parser) parseIfExpr() ast.Expression {
 	if !p.expectPeek(token.LPAREN, ERR_IF_CONDITION_START_LPAREN) {
 		return nil
 	}
+
 	p.nextToken()
 	ifExpr.Condition = p.parseExpression(LOWEST)
 
 	if !p.expectPeek(token.RPAREN, ERR_IF_CONDITION_END_RPAREN) {
 		return nil
 	}
-	p.nextToken()
 
+	p.nextToken()
 	ifExpr.Then = p.parseStatement()
 
 	if p.peekTokenIs(token.ELSE) {
