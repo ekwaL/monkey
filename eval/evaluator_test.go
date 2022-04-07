@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestEvalIntLiteralExpr(t *testing.T) {
+func TestEval(t *testing.T) {
 	tt := []struct {
 		source string
 		want   interface{}
@@ -16,6 +16,34 @@ func TestEvalIntLiteralExpr(t *testing.T) {
 		{source: "228322;", want: int64(228322)},
 		{source: "true;", want: true},
 		{source: "false;", want: false},
+		// {source: "null;", want: nil},
+		{source: "!true;", want: false},
+		{source: "!false;", want: true},
+		{source: "!5;", want: false},
+		{source: "!!true;", want: true},
+		{source: "!!false;", want: false},
+		{source: "!!5;", want: true},
+		{source: "-5;", want: int64(-5)},
+		{source: "--5;", want: int64(5)},
+		{source: "-true;", want: nil},
+		{source: "--5;", want: int64(5)},
+		{source: "5 + 5;", want: int64(10)},
+		{source: "5 - 5;", want: int64(0)},
+		{source: "5 * 5;", want: int64(25)},
+		{source: "5 / 5;", want: int64(1)},
+		{source: "5 > 5;", want: false},
+		{source: "5 < 5;", want: false},
+		// {source: "5 >= 5;", want: true},
+		// {source: "5 <= 5;", want: true},
+		// {source: "null == null;", want: false},
+		{source: "5 == 5;", want: true},
+		{source: "5 != 5;", want: false},
+		{source: "5 > true;", want: nil},
+		{source: "(2 + 2) * 2 == 8;", want: true},
+		{source: "2 + 2 * 2 == 6;", want: true},
+		{source: "(2 + 2) * 2 > 2 + 2 * 2;", want: true},
+		{source: "(5 < 5) == false;", want: true},
+		{source: "2 > 3 != 3 > 4;", want: false},
 	}
 
 	for _, tc := range tt {
@@ -60,18 +88,14 @@ func testObject(t testing.TB, obj object.Object, want interface{}) {
 			t.Errorf("Wrong object value. Got %v, want %v.", o.Value, w)
 		}
 	case object.NULL_OBJ:
-		// o, ok := obj.(*object.Null)
-		// if !ok {
-		// 	t.Errorf("Object is not an Null, got %T. (%+v)", obj, obj)
-		// }
-		// w, ok := want.(int64)
-		// if !ok {
-		// 	t.Errorf("Can not compare %q value with %T .", obj.Type(), want)
-		// }
+		_, ok := obj.(*object.Null)
+		if !ok {
+			t.Errorf("Object is not an Null, got %T. (%+v)", obj, obj)
+		}
 
-		// if w != o.Value {
-		// 	t.Errorf("Wrong object value. Got %v, want %v.", o.Value, w)
-		// }
+		if want != nil {
+			t.Errorf("Object is Null, but want %v.", want)
+		}
 	default:
 		t.Errorf("Unknown object type %q.", obj.Type())
 	}
