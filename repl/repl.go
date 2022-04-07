@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"monkey/eval"
 	"monkey/lexer"
 	"monkey/parser"
 )
@@ -49,9 +50,12 @@ func (r *REPL) Start() {
 		if len(p.Errors()) != 0 {
 			printParseErrors(r.out, p.Errors())
 		}
+		evalResult := eval.Eval(program)
 
-		io.WriteString(r.out, program.String())
-		io.WriteString(r.out, "\n")
+		if evalResult != nil {
+			io.WriteString(r.out, evalResult.Inspect())
+			io.WriteString(r.out, "\n")
+		}
 	}
 }
 

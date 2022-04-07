@@ -8,18 +8,17 @@ import (
 )
 
 func TestReplIntegration(t *testing.T) {
-	t.Run("it accepts and tokenizes input", func(t *testing.T) {
-		tt := []struct {
-			input string
-			want  string
-		}{
-			{"let  five  =  5 ;", "let five = 5;"},
-			{"10 == 10;", "(10 == 10);"},
-			{"fn (i, j) { i + j }", "fn(i, j) { (i + j); };"},
-			{"if( x > y ) true", "if (x > y) true;;"},
-		}
+	tt := []struct {
+		input string
+		want  string
+	}{
+		{"12345;", "12345"},
+		{"true; false;", "false"},
+		{"false; 12345; true;", "true"},
+	}
 
-		for _, tc := range tt {
+	for _, tc := range tt {
+		t.Run(tc.input, func(t *testing.T) {
 			r, out := createReplWithReader(tc.input)
 			r.Start()
 
@@ -37,6 +36,6 @@ func TestReplIntegration(t *testing.T) {
 			if got != tc.want {
 				t.Errorf("wrong repl output. want %q, got %q", tc.want, got)
 			}
-		}
-	})
+		})
+	}
 }
