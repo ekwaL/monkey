@@ -1,6 +1,7 @@
 package eval
 
 import (
+	"fmt"
 	"monkey/ast"
 	"monkey/object"
 	"monkey/token"
@@ -16,6 +17,8 @@ func Eval(node ast.Node) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
 		return evalStatements(node.Statements)
+	case *ast.BlockStmt:
+		return evalStatements(node.Statements)
 	case *ast.ExpressionStmt:
 		return Eval(node.Expression)
 	case *ast.IntLiteralExpr:
@@ -29,11 +32,12 @@ func Eval(node ast.Node) object.Object {
 		left := Eval(node.Left)
 		right := Eval(node.Right)
 		return evalInfixExpr(left, node.Operator, right)
+	case *ast.IfExpr:
+		return evalIfExpr(node)
 	default:
-		println("unimplemented")
+		println(fmt.Sprintf("eval is unimplemented for %T", node))
+		return nil
 	}
-
-	return nil
 }
 
 func evalStatements(statements []ast.Statement) (result object.Object) {
@@ -121,9 +125,34 @@ func evalIntegerInfixExpr(left object.Object, operator string, right object.Obje
 	}
 }
 
+func evalIfExpr(expr *ast.IfExpr) object.Object {
+	condition := Eval(expr.Condition)
+
+	if isTruthy(condition) {
+		return Eval(expr.Then)
+	} else if expr.Else != nil {
+		return Eval(expr.Else)
+	} else {
+		return NULL
+	}
+}
+
 func boolToBooleanObject(value bool) *object.Boolean {
 	if value {
 		return TRUE
 	}
 	return FALSE
+}
+
+func isTruthy(obj object.Object) bool {
+	switch obj {
+	case NULL:
+		return false
+	case TRUE:
+		return true
+	case FALSE:
+		return false
+	default:
+		return true
+	}
 }
