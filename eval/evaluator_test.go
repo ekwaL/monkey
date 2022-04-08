@@ -50,6 +50,11 @@ func TestEval(t *testing.T) {
 		{source: "if (false) { 10; } else { 20; };", want: int64(20)},
 		{source: "if (1 > 2) 10;", want: nil},
 		{source: "if (2 > 1) 10;", want: int64(10)},
+		{source: "return 10;", want: int64(10)},
+		{source: "return true; 10;", want: true},
+		{source: "if (1 > 2) 10;", want: nil},
+		{source: "10; return 2 == 3; 20;", want: false},
+		{source: "if (2 > 1) { if (3 > 2) { return 10; }; return 1;};", want: int64(10)},
 	}
 
 	for _, tc := range tt {
