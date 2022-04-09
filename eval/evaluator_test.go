@@ -25,7 +25,6 @@ func TestEval(t *testing.T) {
 		{source: "!!5;", want: true},
 		{source: "-5;", want: int64(-5)},
 		{source: "--5;", want: int64(5)},
-		{source: "-true;", want: nil},
 		{source: "--5;", want: int64(5)},
 		{source: "5 + 5;", want: int64(10)},
 		{source: "5 - 5;", want: int64(0)},
@@ -38,7 +37,6 @@ func TestEval(t *testing.T) {
 		// {source: "null == null;", want: false},
 		{source: "5 == 5;", want: true},
 		{source: "5 != 5;", want: false},
-		{source: "5 > true;", want: nil},
 		{source: "(2 + 2) * 2 == 8;", want: true},
 		{source: "2 + 2 * 2 == 6;", want: true},
 		{source: "(2 + 2) * 2 > 2 + 2 * 2;", want: true},
@@ -66,6 +64,36 @@ func TestEval(t *testing.T) {
 			}
 
 			testObject(t, got, tc.want)
+		})
+	}
+}
+
+func TestRuntimeErrorHandling(t *testing.T) {
+	tt := []struct {
+		source string
+		want   string
+	}{
+		{source: "-true;", want: "unknown operator: -BOOLEAN"},
+		{source: "true - 5;", want: "type mismatch: BOOLEAN - INTEGER"},
+		{source: "5 > true;", want: "type mismatch: INTEGER > BOOLEAN"},
+		{source: "5 + true; 5;", want: "type mismatch: INTEGER + BOOLEAN"},
+		{source: "true + false;", want: "unknown operator: BOOLEAN + BOOLEAN"},
+		{source: "5; true - 1; 5;", want: "type mismatch: BOOLEAN - INTEGER"},
+		{source: "if (10 > 0) { return true + false; }; 6;", want: "unknown operator: BOOLEAN + BOOLEAN"},
+		{source: "(true - false) * 1", want: "unknown operator: BOOLEAN - BOOLEAN"},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.source, func(t *testing.T) {
+			got := eval(t, tc.source)
+
+			err, ok := got.(*object.Error)
+			if !ok {
+				t.Errorf("No error object returned, got %T (%+v).", got, got)
+			}
+			if err.Message != tc.want {
+				t.Errorf("Wrong error message, got %q, want %q.", err.Message, tc.want)
+			}
 		})
 	}
 }

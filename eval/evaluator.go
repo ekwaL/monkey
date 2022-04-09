@@ -13,6 +13,11 @@ var (
 	FALSE = &object.Boolean{Value: false}
 )
 
+const (
+	ERR_UNKNOWN_OPERATOR = "unknown operator: "
+	ERR_TYPE_MISMATCH    = "type mismatch: "
+)
+
 func Eval(node ast.Node) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
@@ -22,17 +27,32 @@ func Eval(node ast.Node) object.Object {
 	case *ast.ExpressionStmt:
 		return Eval(node.Expression)
 	case *ast.ReturnStmt:
-		return &object.ReturnValue{Value: Eval(node.Value)}
+		val := Eval(node.Value)
+		if isError(val) {
+			return val
+		}
+		return &object.ReturnValue{Value: val}
 	case *ast.IntLiteralExpr:
 		return &object.Integer{Value: node.Value}
 	case *ast.BoolLiteralExpr:
 		return boolToBooleanObject(node.Value)
 	case *ast.PrefixExpr:
 		right := Eval(node.Right)
+		if isError(right) {
+			return right
+		}
 		return evalPrefixExpr(node.Operator, right)
 	case *ast.InfixExpr:
 		left := Eval(node.Left)
+		// TODO: definitely need a more elegant way to handle errors
+		if isError(left) {
+			return left
+		}
 		right := Eval(node.Right)
+		if isError(right) {
+			return right
+		}
+
 		return evalInfixExpr(left, node.Operator, right)
 	case *ast.IfExpr:
 		return evalIfExpr(node)
@@ -46,8 +66,11 @@ func evalProgram(statements []ast.Statement) (result object.Object) {
 	for _, stmt := range statements {
 		result = Eval(stmt)
 
-		if returnValue, ok := result.(*object.ReturnValue); ok {
-			return returnValue.Value
+		switch result := result.(type) {
+		case *object.ReturnValue:
+			return result.Value
+		case *object.Error:
+			return result
 		}
 	}
 	return
@@ -57,8 +80,11 @@ func evalBlockStatement(statements []ast.Statement) (result object.Object) {
 	for _, stmt := range statements {
 		result = Eval(stmt)
 
-		if result != nil && result.Type() == object.RETURN_VALUE_OBJ {
-			return
+		if result != nil {
+			rt := result.Type()
+			if rt == object.RETURN_VALUE_OBJ || rt == object.ERROR_OBJ {
+				return result
+			}
 		}
 	}
 	return
@@ -71,7 +97,7 @@ func evalPrefixExpr(operator string, right object.Object) object.Object {
 	case token.MINUS:
 		return evalMinusOperatorExpr(right)
 	default:
-		return NULL // TODO: runtime error
+		return unknownPrefixOperatorError(operator, "")
 	}
 }
 
@@ -90,7 +116,7 @@ func evalBangOperatorExpr(right object.Object) object.Object {
 
 func evalMinusOperatorExpr(right object.Object) object.Object {
 	if right.Type() != object.INTEGER_OBJ {
-		return NULL // TODO: runtime error
+		return unknownPrefixOperatorError("-", right.Type())
 	}
 
 	val := right.(*object.Integer).Value
@@ -98,18 +124,17 @@ func evalMinusOperatorExpr(right object.Object) object.Object {
 }
 
 func evalInfixExpr(left object.Object, operator string, right object.Object) object.Object {
-	if left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ {
+	switch {
+	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpr(left, operator, right)
-	}
-
-	switch operator {
-	case token.EQUAL_EQUAL:
+	case operator == token.EQUAL_EQUAL:
 		return boolToBooleanObject(left == right)
-
-	case token.NOT_EQUAL:
+	case operator == token.NOT_EQUAL:
 		return boolToBooleanObject(left != right)
+	case left.Type() != right.Type():
+		return typeMismatchError(left.Type(), operator, right.Type())
 	default:
-		return NULL // TODO: runtime error
+		return unknownInfixOperatorError(left.Type(), operator, right.Type())
 	}
 }
 
@@ -138,7 +163,7 @@ func evalIntegerInfixExpr(left object.Object, operator string, right object.Obje
 	case token.NOT_EQUAL:
 		return boolToBooleanObject(leftValue != rightValue)
 	default:
-		return NULL
+		return unknownInfixOperatorError(left.Type(), operator, right.Type())
 	}
 }
 
@@ -171,5 +196,34 @@ func isTruthy(obj object.Object) bool {
 		return false
 	default:
 		return true
+	}
+}
+
+func isError(obj object.Object) bool {
+	return obj.Type() == object.ERROR_OBJ
+}
+
+func unknownPrefixOperatorError(operator string, right object.ObjectType) *object.Error {
+	return &object.Error{
+		Message: fmt.Sprintf(ERR_UNKNOWN_OPERATOR+"%s%s", operator, right),
+	}
+}
+
+func unknownInfixOperatorError(
+	left object.ObjectType,
+	operator string,
+	right object.ObjectType) *object.Error {
+	return &object.Error{
+		Message: fmt.Sprintf(ERR_UNKNOWN_OPERATOR+"%s %s %s", left, operator, right),
+	}
+}
+
+func typeMismatchError(
+	left object.ObjectType,
+	operator string,
+	right object.ObjectType) *object.Error {
+
+	return &object.Error{
+		Message: fmt.Sprintf(ERR_TYPE_MISMATCH+"%s %s %s", left, operator, right),
 	}
 }
