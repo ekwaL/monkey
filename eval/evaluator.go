@@ -14,57 +14,67 @@ var (
 )
 
 const (
-	ERR_UNKNOWN_OPERATOR = "unknown operator: "
-	ERR_TYPE_MISMATCH    = "type mismatch: "
+	ERR_UNKNOWN_OPERATOR     = "unknown operator: "
+	ERR_TYPE_MISMATCH        = "type mismatch: "
+	ERR_IDENTIFIER_NOT_FOUND = "identifier not found: "
 )
 
-func Eval(node ast.Node) object.Object {
+func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
-		return evalProgram(node.Statements)
+		return evalProgram(node.Statements, env)
 	case *ast.BlockStmt:
-		return evalBlockStatement(node.Statements)
+		return evalBlockStatement(node.Statements, env)
 	case *ast.ExpressionStmt:
-		return Eval(node.Expression)
+		return Eval(node.Expression, env)
 	case *ast.ReturnStmt:
-		val := Eval(node.Value)
+		val := Eval(node.Value, env)
 		if isError(val) {
 			return val
 		}
 		return &object.ReturnValue{Value: val}
+	case *ast.LetStmt:
+		val := Eval(node.Value, env)
+		if isError(val) {
+			return val
+		}
+		env.Set(node.Name.Value, val)
+		return val
 	case *ast.IntLiteralExpr:
 		return &object.Integer{Value: node.Value}
 	case *ast.BoolLiteralExpr:
 		return boolToBooleanObject(node.Value)
 	case *ast.PrefixExpr:
-		right := Eval(node.Right)
+		right := Eval(node.Right, env)
 		if isError(right) {
 			return right
 		}
 		return evalPrefixExpr(node.Operator, right)
 	case *ast.InfixExpr:
-		left := Eval(node.Left)
+		left := Eval(node.Left, env)
 		// TODO: definitely need a more elegant way to handle errors
 		if isError(left) {
 			return left
 		}
-		right := Eval(node.Right)
+		right := Eval(node.Right, env)
 		if isError(right) {
 			return right
 		}
 
 		return evalInfixExpr(left, node.Operator, right)
 	case *ast.IfExpr:
-		return evalIfExpr(node)
+		return evalIfExpr(node, env)
+	case *ast.IdentifierExpr:
+		return evalIdentifier(node, env)
 	default:
 		println(fmt.Sprintf("eval is unimplemented for %T", node))
 		return nil
 	}
 }
 
-func evalProgram(statements []ast.Statement) (result object.Object) {
+func evalProgram(statements []ast.Statement, env *object.Environment) (result object.Object) {
 	for _, stmt := range statements {
-		result = Eval(stmt)
+		result = Eval(stmt, env)
 
 		switch result := result.(type) {
 		case *object.ReturnValue:
@@ -76,9 +86,9 @@ func evalProgram(statements []ast.Statement) (result object.Object) {
 	return
 }
 
-func evalBlockStatement(statements []ast.Statement) (result object.Object) {
+func evalBlockStatement(statements []ast.Statement, env *object.Environment) (result object.Object) {
 	for _, stmt := range statements {
-		result = Eval(stmt)
+		result = Eval(stmt, env)
 
 		if result != nil {
 			rt := result.Type()
@@ -167,16 +177,24 @@ func evalIntegerInfixExpr(left object.Object, operator string, right object.Obje
 	}
 }
 
-func evalIfExpr(expr *ast.IfExpr) object.Object {
-	condition := Eval(expr.Condition)
+func evalIfExpr(expr *ast.IfExpr, env *object.Environment) object.Object {
+	condition := Eval(expr.Condition, env)
 
 	if isTruthy(condition) {
-		return Eval(expr.Then)
+		return Eval(expr.Then, env)
 	} else if expr.Else != nil {
-		return Eval(expr.Else)
+		return Eval(expr.Else, env)
 	} else {
 		return NULL
 	}
+}
+
+func evalIdentifier(node *ast.IdentifierExpr, env *object.Environment) object.Object {
+	val, ok := env.Get(node.Value)
+	if !ok {
+		return identifierNotFound(node.Value)
+	}
+	return val
 }
 
 func boolToBooleanObject(value bool) *object.Boolean {
@@ -225,5 +243,11 @@ func typeMismatchError(
 
 	return &object.Error{
 		Message: fmt.Sprintf(ERR_TYPE_MISMATCH+"%s %s %s", left, operator, right),
+	}
+}
+
+func identifierNotFound(identifier string) *object.Error {
+	return &object.Error{
+		Message: fmt.Sprintf(ERR_IDENTIFIER_NOT_FOUND+"'%s'", identifier),
 	}
 }

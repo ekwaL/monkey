@@ -53,6 +53,12 @@ func TestEval(t *testing.T) {
 		{source: "if (1 > 2) 10;", want: nil},
 		{source: "10; return 2 == 3; 20;", want: false},
 		{source: "if (2 > 1) { if (3 > 2) { return 10; }; return 1;};", want: int64(10)},
+		{source: "let a = 10;", want: int64(10)},
+		// {source: "{ 20; let a = 10; }", want: int64(20)},
+		{source: "let a = 10; a;", want: int64(10)},
+		{source: "let a = 10 * 5; a;", want: int64(50)},
+		{source: "let a = 10; let b = a; b;", want: int64(10)},
+		{source: "let a = 10; let b = a; let c = a + b + 20; c;", want: int64(40)},
 	}
 
 	for _, tc := range tt {
@@ -81,6 +87,8 @@ func TestRuntimeErrorHandling(t *testing.T) {
 		{source: "5; true - 1; 5;", want: "type mismatch: BOOLEAN - INTEGER"},
 		{source: "if (10 > 0) { return true + false; }; 6;", want: "unknown operator: BOOLEAN + BOOLEAN"},
 		{source: "(true - false) * 1", want: "unknown operator: BOOLEAN - BOOLEAN"},
+		{source: "x;", want: "identifier not found: 'x'"},
+		{source: "let a = 10; y;", want: "identifier not found: 'y'"},
 	}
 
 	for _, tc := range tt {
@@ -149,5 +157,5 @@ func eval(t testing.TB, source string) object.Object {
 		t.Fatalf("Error while parsing %q.", source)
 	}
 
-	return Eval(program)
+	return Eval(program, object.NewEnvironment())
 }

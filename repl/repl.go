@@ -6,6 +6,7 @@ import (
 	"io"
 	"monkey/eval"
 	"monkey/lexer"
+	"monkey/object"
 	"monkey/parser"
 )
 
@@ -32,6 +33,7 @@ func (r *REPL) Start() {
 	r.printWelcomeMessage()
 
 	scanner := bufio.NewScanner(r.in)
+	env := object.NewEnvironment()
 
 	lineNumber := 0
 	for {
@@ -50,7 +52,7 @@ func (r *REPL) Start() {
 		if len(p.Errors()) != 0 {
 			printParseErrors(r.out, p.Errors())
 		}
-		evalResult := eval.Eval(program)
+		evalResult := eval.Eval(program, env)
 
 		if evalResult != nil {
 			io.WriteString(r.out, evalResult.Inspect())
