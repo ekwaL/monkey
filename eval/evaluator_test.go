@@ -7,6 +7,11 @@ import (
 	"testing"
 )
 
+type expectFn struct {
+	params []string
+	body   string
+}
+
 func TestEval(t *testing.T) {
 	tt := []struct {
 		source string
@@ -59,6 +64,10 @@ func TestEval(t *testing.T) {
 		{source: "let a = 10 * 5; a;", want: int64(50)},
 		{source: "let a = 10; let b = a; b;", want: int64(10)},
 		{source: "let a = 10; let b = a; let c = a + b + 20; c;", want: int64(40)},
+		{source: "fn(a, b) { a + b }", want: &expectFn{[]string{"a", "b"}, "{ (a + b); }"}},
+		{source: "let x = fn(a, b) { a + b }; x;", want: &expectFn{[]string{"a", "b"}, "{ (a + b); }"}},
+		{source: "let i = fn(x) { x }; i(10);", want: int64(10)},
+		{source: "let i = fn(x) { return x; }; i(10);", want: int64(10)},
 	}
 
 	for _, tc := range tt {
@@ -142,6 +151,29 @@ func testObject(t testing.TB, obj object.Object, want interface{}) {
 
 		if want != nil {
 			t.Errorf("Object is Null, but want %v.", want)
+		}
+	case object.FUNCTION_OBJ:
+		fn, ok := obj.(*object.Function)
+		if !ok {
+			t.Errorf("Object is not an Function, got %T. (%+v)", obj, obj)
+		}
+		w, ok := want.(*expectFn)
+		if !ok {
+			t.Errorf("Can not compare %q value with %T .", obj.Type(), want)
+		}
+
+		if len(fn.Parameters) != len(w.params) {
+			t.Errorf("Wrong parameters number, got %d, want %d.", len(fn.Parameters), len(w.params))
+		}
+
+		for i, p := range fn.Parameters {
+			if p.Value != w.params[i] {
+				t.Errorf("Wrong parameter name, parameter index=%d, got %q, want %q.", i, p.Value, w.params[i])
+			}
+		}
+
+		if fn.Body.String() != w.body {
+			t.Errorf("Wrong function body, got %q, want %q.", fn.Body.String(), w.body)
 		}
 	default:
 		t.Errorf("Unknown object type %q.", obj.Type())

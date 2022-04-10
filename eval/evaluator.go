@@ -13,12 +13,6 @@ var (
 	FALSE = &object.Boolean{Value: false}
 )
 
-const (
-	ERR_UNKNOWN_OPERATOR     = "unknown operator: "
-	ERR_TYPE_MISMATCH        = "type mismatch: "
-	ERR_IDENTIFIER_NOT_FOUND = "identifier not found: "
-)
-
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
@@ -66,6 +60,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalIfExpr(node, env)
 	case *ast.IdentifierExpr:
 		return evalIdentifier(node, env)
+	case *ast.FunctionExpr:
+		return evalFunctionExpr(node, env)
+	case *ast.CallExpr:
+		return evalCallExpr(node, env)
 	default:
 		println(fmt.Sprintf("eval is unimplemented for %T", node))
 		return nil
@@ -197,6 +195,63 @@ func evalIdentifier(node *ast.IdentifierExpr, env *object.Environment) object.Ob
 	return val
 }
 
+func evalFunctionExpr(node *ast.FunctionExpr, env *object.Environment) *object.Function {
+	return &object.Function{
+		Parameters: node.Parameters,
+		Body:       node.Body,
+		Env:        env,
+	}
+}
+
+func evalCallExpr(node *ast.CallExpr, env *object.Environment) object.Object {
+	fn := Eval(node.Function, env)
+	if isError(fn) {
+		return fn
+	}
+	args := evalExpressions(node.Arguments, env)
+	if len(args) > 0 && isError(args[0]) {
+		return args[0]
+	}
+
+	return applyFunction(fn, args)
+}
+
+func evalExpressions(expressions []ast.Expression, env *object.Environment) (result []object.Object) {
+	for _, expr := range expressions {
+		arg := Eval(expr, env)
+		if isError(arg) {
+			return []object.Object{arg}
+		}
+		result = append(result, arg)
+	}
+	return
+}
+
+func applyFunction(fn object.Object, args []object.Object) object.Object {
+	function, ok := fn.(*object.Function)
+	if !ok {
+		return notAFunction(string(fn.Type()), fn.Inspect())
+	}
+	if len(function.Parameters) != len(args) {
+		return wrongArgumentsCount(len(function.Parameters), len(args))
+	}
+
+	extendedEnv := extendFunctionEnv(function, args)
+	result := Eval(function.Body, extendedEnv)
+	if returnValue, ok := result.(*object.ReturnValue); ok {
+		return returnValue.Value
+	}
+	return result
+}
+
+func extendFunctionEnv(fn *object.Function, args []object.Object) *object.Environment {
+	env := object.NewEnclosedEnvironment(fn.Env)
+	for i, arg := range args {
+		env.Set(fn.Parameters[i].Value, arg)
+	}
+	return env
+}
+
 func boolToBooleanObject(value bool) *object.Boolean {
 	if value {
 		return TRUE
@@ -219,35 +274,4 @@ func isTruthy(obj object.Object) bool {
 
 func isError(obj object.Object) bool {
 	return obj.Type() == object.ERROR_OBJ
-}
-
-func unknownPrefixOperatorError(operator string, right object.ObjectType) *object.Error {
-	return &object.Error{
-		Message: fmt.Sprintf(ERR_UNKNOWN_OPERATOR+"%s%s", operator, right),
-	}
-}
-
-func unknownInfixOperatorError(
-	left object.ObjectType,
-	operator string,
-	right object.ObjectType) *object.Error {
-	return &object.Error{
-		Message: fmt.Sprintf(ERR_UNKNOWN_OPERATOR+"%s %s %s", left, operator, right),
-	}
-}
-
-func typeMismatchError(
-	left object.ObjectType,
-	operator string,
-	right object.ObjectType) *object.Error {
-
-	return &object.Error{
-		Message: fmt.Sprintf(ERR_TYPE_MISMATCH+"%s %s %s", left, operator, right),
-	}
-}
-
-func identifierNotFound(identifier string) *object.Error {
-	return &object.Error{
-		Message: fmt.Sprintf(ERR_IDENTIFIER_NOT_FOUND+"'%s'", identifier),
-	}
 }
