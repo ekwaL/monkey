@@ -28,29 +28,48 @@ func unknownInfixOperatorError(
 	}
 }
 
-func typeMismatchError(
+func infixTypeMismatchError(
 	left object.ObjectType,
 	operator string,
 	right object.ObjectType) *object.Error {
-
 	return &object.Error{
 		Message: fmt.Sprintf(ERR_TYPE_MISMATCH+"%s %s %s", left, operator, right),
 	}
 }
 
-func identifierNotFound(identifier string) *object.Error {
+func builtinTypeMismatchError(
+	name string,
+	args ...object.Object) *object.Error {
+	argsStr := ""
+	switch len(args) {
+	case 0:
+		argsStr = ""
+	case 1:
+		argsStr = string(args[0].Type())
+	default:
+		argsStr = string(args[0].Type())
+		for _, arg := range args[1:] {
+			argsStr += ", " + string(arg.Type())
+		}
+	}
+	return &object.Error{
+		Message: ERR_TYPE_MISMATCH + name + "(" + argsStr + ")",
+	}
+}
+
+func identifierNotFoundError(identifier string) *object.Error {
 	return &object.Error{
 		Message: fmt.Sprintf(ERR_IDENTIFIER_NOT_FOUND+"'%s'", identifier),
 	}
 }
 
-func notAFunction(objType string, identifier string) *object.Error {
+func notAFunctionError(objType string, identifier string) *object.Error {
 	return &object.Error{
 		Message: fmt.Sprintf(ERR_NOT_A_FUNCTION+"%s '%s'", objType, identifier),
 	}
 }
 
-func wrongArgumentsCount(expect int, got int) *object.Error {
+func wrongArgumentsCountError(expect int, got int) *object.Error {
 	return &object.Error{
 		Message: fmt.Sprintf(ERR_WRONG_ARGUMENTS_COUNT+"expect %d, got %d", expect, got),
 	}

@@ -144,7 +144,7 @@ func evalInfixExpr(left object.Object, operator string, right object.Object) obj
 	case operator == token.NOT_EQUAL:
 		return boolToBooleanObject(left != right)
 	case left.Type() != right.Type():
-		return typeMismatchError(left.Type(), operator, right.Type())
+		return infixTypeMismatchError(left.Type(), operator, right.Type())
 	default:
 		return unknownInfixOperatorError(left.Type(), operator, right.Type())
 	}
@@ -207,11 +207,15 @@ func evalIfExpr(expr *ast.IfExpr, env *object.Environment) object.Object {
 }
 
 func evalIdentifier(node *ast.IdentifierExpr, env *object.Environment) object.Object {
-	val, ok := env.Get(node.Value)
-	if !ok {
-		return identifierNotFound(node.Value)
+	if val, ok := env.Get(node.Value); ok {
+		return val
 	}
-	return val
+
+	if builtin, ok := builtins[node.Value]; ok {
+		return builtin
+	}
+
+	return identifierNotFoundError(node.Value)
 }
 
 func evalFunctionExpr(node *ast.FunctionExpr, env *object.Environment) *object.Function {
@@ -247,20 +251,22 @@ func evalExpressions(expressions []ast.Expression, env *object.Environment) (res
 }
 
 func applyFunction(fn object.Object, args []object.Object) object.Object {
-	function, ok := fn.(*object.Function)
-	if !ok {
-		return notAFunction(string(fn.Type()), fn.Inspect())
-	}
-	if len(function.Parameters) != len(args) {
-		return wrongArgumentsCount(len(function.Parameters), len(args))
-	}
+	switch fn := fn.(type) {
+	case *object.Function:
+		if len(fn.Parameters) != len(args) {
+			return wrongArgumentsCountError(len(fn.Parameters), len(args))
+		}
 
-	extendedEnv := extendFunctionEnv(function, args)
-	result := Eval(function.Body, extendedEnv)
-	if returnValue, ok := result.(*object.ReturnValue); ok {
-		return returnValue.Value
+		extendedEnv := extendFunctionEnv(fn, args)
+		result := Eval(fn.Body, extendedEnv)
+		if returnValue, ok := result.(*object.ReturnValue); ok {
+			return returnValue.Value
+		}
+		return result
+	case *object.Builtin:
+		return fn.Fn(args...)
 	}
-	return result
+	return notAFunctionError(string(fn.Type()), fn.Inspect())
 }
 
 func extendFunctionEnv(fn *object.Function, args []object.Object) *object.Environment {

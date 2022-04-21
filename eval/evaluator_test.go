@@ -72,6 +72,8 @@ func TestEval(t *testing.T) {
 		{source: "let x = fn(a, b) { a + b }; x;", want: &expectFn{[]string{"a", "b"}, "{ (a + b); }"}},
 		{source: "let i = fn(x) { x }; i(10);", want: int64(10)},
 		{source: "let i = fn(x) { return x; }; i(10);", want: int64(10)},
+		{source: `len("Hello, World!")`, want: int64(13)},
+		{source: `len("")`, want: int64(0)},
 	}
 
 	for _, tc := range tt {
@@ -101,10 +103,14 @@ func TestRuntimeErrorHandling(t *testing.T) {
 		{source: `"str1" < "str2";`, want: "unknown operator: STRING < STRING"},
 		{source: `"str1" - "str2";`, want: "unknown operator: STRING - STRING"},
 		{source: "5; true - 1; 5;", want: "type mismatch: BOOLEAN - INTEGER"},
+		{source: "let x = fn() { true }; x(1)", want: "wrong arguments count: expect 0, got 1"},
+		{source: "len(10)", want: "type mismatch: len(INTEGER)"},
+		{source: `len("one", "two")`, want: "wrong arguments count: expect 1, got 2"},
 		{source: "if (10 > 0) { return true + false; }; 6;", want: "unknown operator: BOOLEAN + BOOLEAN"},
 		{source: "(true - false) * 1", want: "unknown operator: BOOLEAN - BOOLEAN"},
 		{source: "x;", want: "identifier not found: 'x'"},
 		{source: "let a = 10; y;", want: "identifier not found: 'y'"},
+		{source: "let function = 1; function(false)", want: "not a function: INTEGER '1'"},
 	}
 
 	for _, tc := range tt {
@@ -195,6 +201,8 @@ func testObject(t testing.TB, obj object.Object, want interface{}) {
 		if fn.Body.String() != w.body {
 			t.Errorf("Wrong function body, got %q, want %q.", fn.Body.String(), w.body)
 		}
+	case object.ERROR_OBJ:
+		t.Errorf("Got unexpected error object: %v.", obj)
 	default:
 		t.Errorf("Unknown object type %q.", obj.Type())
 	}
