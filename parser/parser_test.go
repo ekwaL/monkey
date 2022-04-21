@@ -327,6 +327,34 @@ func TestBoolLiteral(t *testing.T) {
 	}
 }
 
+func TestStringLiteral(t *testing.T) {
+	source := `"string literal";`
+
+	program := parse(t, source)
+
+	want := "string literal"
+	wantLen := 1
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	expressionStmt, ok := stmt.(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+	}
+	if expressionStmt.TokenLiteral() != want {
+		t.Errorf("Wrong TokenLiteral, want %q, got %q.", want, expressionStmt.TokenLiteral())
+	}
+
+	testIdentifierOrLiteralExpr(t, expressionStmt.Expression, want)
+}
+
 func TestParseingPrefixExpressions(t *testing.T) {
 	tt := []struct {
 		source   string
@@ -508,7 +536,12 @@ func testIdentifierOrLiteralExpr(t testing.TB, expr ast.Expression, want interfa
 	case bool:
 		testBoolLiteralExpression(t, expr, w)
 	case string:
-		testIdentifierExpression(t, expr, string(w))
+		switch expr.(type) {
+		case *ast.IdentifierExpr:
+			testIdentifierExpression(t, expr, string(w))
+		default:
+			testStringLiteralExpression(t, expr, string(w))
+		}
 	}
 }
 
@@ -562,6 +595,23 @@ func testBoolLiteralExpression(t testing.TB, expr ast.Expression, want bool) {
 	wantStr := strconv.FormatBool(want)
 	if boolLiteralExpr.TokenLiteral() != wantStr {
 		t.Errorf("Wrong TokenLiteral(). Got %q, want %q.", boolLiteralExpr.TokenLiteral(), wantStr)
+	}
+}
+
+func testStringLiteralExpression(t testing.TB, expr ast.Expression, want string) {
+	t.Helper()
+
+	stringLiteralExpr, ok := expr.(*ast.StringLiteralExpr)
+	if !ok {
+		t.Errorf("Expression is not StringLiteralExpr, got %T.", expr)
+	}
+
+	if stringLiteralExpr.Value != want {
+		t.Errorf("Wrong StringLiteralExpr Value. Got %v, want %v.", stringLiteralExpr.Value, want)
+	}
+
+	if stringLiteralExpr.TokenLiteral() != want {
+		t.Errorf("Wrong TokenLiteral(). Got %q, want %q.", stringLiteralExpr.TokenLiteral(), want)
 	}
 }
 

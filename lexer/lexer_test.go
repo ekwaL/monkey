@@ -29,6 +29,9 @@ if (5 < 10) {
 10 != 9;
 10 <= 11;
 11 >= 10;
+
+"string indeed";
+let x = "str";
 `
 
 func TestNextToken(t *testing.T) {
@@ -148,6 +151,17 @@ func TestNextToken(t *testing.T) {
 		{token.INT, "10"},
 		{token.SEMICOLON, ";"},
 
+		// "string indeed";
+		{token.STRING, "string indeed"},
+		{token.SEMICOLON, ";"},
+
+		// let x = "str";
+		{token.LET, "let"},
+		{token.IDENTIFIER, "x"},
+		{token.ASSIGN, "="},
+		{token.STRING, "str"},
+		{token.SEMICOLON, ";"},
+
 		{token.EOF, "\x00"},
 	}
 
@@ -165,7 +179,7 @@ func TestNextToken(t *testing.T) {
 
 		if tok.Literal != tc.expectedLiteral {
 			t.Fatalf(
-				"tests[%d] - literal wrong. expedted %q, got %q",
+				"tests[%d] - literal wrong. expected %q, got %q",
 				i, tc.expectedLiteral, tok.Literal,
 			)
 		}

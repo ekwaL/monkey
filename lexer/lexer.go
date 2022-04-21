@@ -75,6 +75,9 @@ func (l *Lexer) NextToken() token.Token {
 		tok = makeToken(token.SEMICOLON, l.ch)
 	case 0:
 		tok = makeToken(token.EOF, 0)
+	case '"':
+		tok.Literal = l.readString()
+		tok.Type = token.STRING
 	default:
 		if isLetter(l.ch) {
 			tok.Literal = l.readIdentifier()
@@ -100,6 +103,16 @@ func (l *Lexer) readIdentifier() string {
 	}
 
 	return l.input[position:l.position]
+}
+
+func (l *Lexer) readString() string {
+	l.readChar()
+	from := l.position
+	for l.ch != '"' && l.ch != 0 {
+		l.readChar()
+	}
+
+	return l.input[from:l.position]
 }
 
 func (l *Lexer) readInt() string {

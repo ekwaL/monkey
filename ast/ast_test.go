@@ -156,7 +156,7 @@ func TestAstString(t *testing.T) {
 				},
 			},
 
-			//fn(x, y) { 10; };
+			//fn(x, y) { "string literal"; };
 			&ast.ExpressionStmt{
 				Token: token.Token{
 					Type:    token.FUNCTION,
@@ -191,15 +191,15 @@ func TestAstString(t *testing.T) {
 						Statements: []ast.Statement{
 							&ast.ExpressionStmt{
 								Token: token.Token{
-									Type:    token.INT,
-									Literal: "10",
+									Type:    token.STRING,
+									Literal: "string literal",
 								},
-								Expression: &ast.IntLiteralExpr{
+								Expression: &ast.StringLiteralExpr{
 									Token: token.Token{
-										Type:    token.INT,
-										Literal: "10",
+										Type:    token.STRING,
+										Literal: "string literal",
 									},
-									Value: 10,
+									Value: "string literal",
 								},
 							},
 						},
@@ -266,7 +266,7 @@ return 123;
 999;
 (!(false == true));
 if (!true) { 10; } else { false; };
-fn(x, y) { 10; };
+fn(x, y) { "string literal"; };
 sum(1, (2 + 3));
 `
 	if program.String() != want {

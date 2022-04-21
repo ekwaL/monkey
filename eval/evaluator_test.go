@@ -21,6 +21,7 @@ func TestEval(t *testing.T) {
 		{source: "228322;", want: int64(228322)},
 		{source: "true;", want: true},
 		{source: "false;", want: false},
+		{source: `"string literal";`, want: "string literal"},
 		// {source: "null;", want: nil},
 		{source: "!true;", want: false},
 		{source: "!false;", want: true},
@@ -42,6 +43,9 @@ func TestEval(t *testing.T) {
 		// {source: "null == null;", want: false},
 		{source: "5 == 5;", want: true},
 		{source: "5 != 5;", want: false},
+		{source: `"string" + " " + "concatenation"`, want: "string concatenation"},
+		{source: `"str" == "str";`, want: true},
+		{source: `"str1" == "str2";`, want: false},
 		{source: "(2 + 2) * 2 == 8;", want: true},
 		{source: "2 + 2 * 2 == 6;", want: true},
 		{source: "(2 + 2) * 2 > 2 + 2 * 2;", want: true},
@@ -93,6 +97,9 @@ func TestRuntimeErrorHandling(t *testing.T) {
 		{source: "5 > true;", want: "type mismatch: INTEGER > BOOLEAN"},
 		{source: "5 + true; 5;", want: "type mismatch: INTEGER + BOOLEAN"},
 		{source: "true + false;", want: "unknown operator: BOOLEAN + BOOLEAN"},
+		{source: "true + false;", want: "unknown operator: BOOLEAN + BOOLEAN"},
+		{source: `"str1" < "str2";`, want: "unknown operator: STRING < STRING"},
+		{source: `"str1" - "str2";`, want: "unknown operator: STRING - STRING"},
 		{source: "5; true - 1; 5;", want: "type mismatch: BOOLEAN - INTEGER"},
 		{source: "if (10 > 0) { return true + false; }; 6;", want: "unknown operator: BOOLEAN + BOOLEAN"},
 		{source: "(true - false) * 1", want: "unknown operator: BOOLEAN - BOOLEAN"},
@@ -136,6 +143,19 @@ func testObject(t testing.TB, obj object.Object, want interface{}) {
 			t.Errorf("Object is not an Boolean, got %T. (%+v)", obj, obj)
 		}
 		w, ok := want.(bool)
+		if !ok {
+			t.Errorf("Can not compare %q value with %T .", obj.Type(), want)
+		}
+
+		if w != o.Value {
+			t.Errorf("Wrong object value. Got %v, want %v.", o.Value, w)
+		}
+	case object.STRING_OBJ:
+		o, ok := obj.(*object.String)
+		if !ok {
+			t.Errorf("Object is not an String, got %T. (%+v)", obj, obj)
+		}
+		w, ok := want.(string)
 		if !ok {
 			t.Errorf("Can not compare %q value with %T .", obj.Type(), want)
 		}

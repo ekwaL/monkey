@@ -38,6 +38,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Integer{Value: node.Value}
 	case *ast.BoolLiteralExpr:
 		return boolToBooleanObject(node.Value)
+	case *ast.StringLiteralExpr:
+		return &object.String{Value: node.Value}
 	case *ast.PrefixExpr:
 		right := Eval(node.Right, env)
 		if isError(right) {
@@ -135,6 +137,8 @@ func evalInfixExpr(left object.Object, operator string, right object.Object) obj
 	switch {
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpr(left, operator, right)
+	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
+		return evalStringInfixExpr(left, operator, right)
 	case operator == token.EQUAL_EQUAL:
 		return boolToBooleanObject(left == right)
 	case operator == token.NOT_EQUAL:
@@ -166,6 +170,21 @@ func evalIntegerInfixExpr(left object.Object, operator string, right object.Obje
 		return boolToBooleanObject(leftValue < rightValue)
 	case token.LESS_EQUAL:
 		return boolToBooleanObject(leftValue <= rightValue)
+	case token.EQUAL_EQUAL:
+		return boolToBooleanObject(leftValue == rightValue)
+	case token.NOT_EQUAL:
+		return boolToBooleanObject(leftValue != rightValue)
+	default:
+		return unknownInfixOperatorError(left.Type(), operator, right.Type())
+	}
+}
+
+func evalStringInfixExpr(left object.Object, operator string, right object.Object) object.Object {
+	leftValue := left.(*object.String).Value
+	rightValue := right.(*object.String).Value
+	switch operator {
+	case token.PLUS:
+		return &object.String{Value: leftValue + rightValue}
 	case token.EQUAL_EQUAL:
 		return boolToBooleanObject(leftValue == rightValue)
 	case token.NOT_EQUAL:
