@@ -26,6 +26,30 @@ func TestAstString(t *testing.T) {
 					Value: 10,
 				},
 			},
+			// num = "hello"
+			&ast.ExpressionStmt{
+				Token: token.Token{},
+				Expression: &ast.AssignExpr{
+					Token: token.Token{
+						Type:    token.ASSIGN,
+						Literal: "=",
+					},
+					Identifier: &ast.IdentifierExpr{
+						Token: token.Token{
+							Type:    token.IDENTIFIER,
+							Literal: "num",
+						},
+						Value: "num",
+					},
+					Expression: &ast.StringLiteralExpr{
+						Token: token.Token{
+							Type:    token.STRING,
+							Literal: "hello",
+						},
+						Value: "hello",
+					},
+				},
+			},
 			&ast.ReturnStmt{
 				Token: token.Token{
 					Type:    token.RETURN,
@@ -262,6 +286,7 @@ func TestAstString(t *testing.T) {
 
 	want :=
 		`let num = 10;
+num = "hello";
 return 123;
 999;
 (!(false == true));

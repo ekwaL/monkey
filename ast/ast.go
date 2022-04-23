@@ -197,6 +197,24 @@ func (p *InfixExpr) String() string {
 	return out.String()
 }
 
+type AssignExpr struct {
+	Token      token.Token // =
+	Identifier *IdentifierExpr
+	Expression Expression
+}
+
+func (a *AssignExpr) expressionNode()      {}
+func (a *AssignExpr) TokenLiteral() string { return a.Token.Literal }
+func (a *AssignExpr) String() string {
+	var out bytes.Buffer
+	out.WriteString(a.Identifier.String())
+	out.WriteString(" ")
+	out.WriteString(a.TokenLiteral())
+	out.WriteString(" ")
+	out.WriteString(a.Expression.String())
+	return out.String()
+}
+
 type IfExpr struct {
 	Token     token.Token
 	Condition Expression

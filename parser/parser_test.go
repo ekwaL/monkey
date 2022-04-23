@@ -77,6 +77,40 @@ func TestReturnStatement(t *testing.T) {
 	}
 }
 
+func TestAssignExpression(t *testing.T) {
+	source := `
+		x = 5;`
+
+	program := parse(t, source)
+	wantLen := 1
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	expressionStmt, ok := stmt.(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+	}
+	expr := expressionStmt.Expression
+	assignExpr, ok := expr.(*ast.AssignExpr)
+	if !ok {
+		t.Fatalf("expr is not *ast.AssignExpr. Got %T.", expr)
+	}
+
+	if assignExpr.TokenLiteral() != "=" {
+		t.Errorf("Wrong TokenLiteral, want '=', got %q.", assignExpr.TokenLiteral())
+	}
+
+	testIdentifierOrLiteralExpr(t, assignExpr.Identifier, "x")
+	testIdentifierOrLiteralExpr(t, assignExpr.Expression, 5)
+}
+
 func TestIfExpression(t *testing.T) {
 	source := `
 		if (5 > 10) {
@@ -192,9 +226,6 @@ func TestCallExpression(t *testing.T) {
 	source := `
 		fun(1, true == false);`
 	program := parse(t, source)
-	for _, s := range program.Statements {
-		println(s)
-	}
 
 	if program == nil {
 		t.Fatal("ParseProgram() returned 'nil'.")

@@ -11,6 +11,7 @@ import (
 const (
 	_ int = iota
 	LOWEST
+	ASSIGN      // =
 	EQUALS      // ==
 	LESSGREATER // > || <
 	SUM         // +
@@ -20,6 +21,7 @@ const (
 )
 
 var precedences = map[token.TokenType]int{
+	token.ASSIGN:      ASSIGN,
 	token.EQUAL_EQUAL: EQUALS,
 	token.NOT_EQUAL:   EQUALS,
 	token.LESS:        LESSGREATER,
@@ -82,6 +84,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.EQUAL_EQUAL, p.parseInfixExpr)
 	p.registerInfix(token.NOT_EQUAL, p.parseInfixExpr)
 	p.registerInfix(token.LPAREN, p.parseCallExpr)
+	p.registerInfix(token.ASSIGN, p.parseAssignExpr)
 	return &p
 }
 

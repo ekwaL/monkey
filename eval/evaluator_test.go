@@ -68,6 +68,9 @@ func TestEval(t *testing.T) {
 		{source: "let a = 10 * 5; a;", want: int64(50)},
 		{source: "let a = 10; let b = a; b;", want: int64(10)},
 		{source: "let a = 10; let b = a; let c = a + b + 20; c;", want: int64(40)},
+		{source: "let a = 10; a = 20;", want: int64(20)},
+		{source: "let a = 10; let b = 20; a = b = 30;", want: int64(30)},
+		{source: "let a = 1; let b = 2; let c = 3; a = b = c;", want: int64(3)},
 		{source: "fn(a, b) { a + b }", want: &expectFn{[]string{"a", "b"}, "{ (a + b); }"}},
 		{source: "let x = fn(a, b) { a + b }; x;", want: &expectFn{[]string{"a", "b"}, "{ (a + b); }"}},
 		{source: "let i = fn(x) { x }; i(10);", want: int64(10)},
@@ -110,6 +113,8 @@ func TestRuntimeErrorHandling(t *testing.T) {
 		{source: "(true - false) * 1", want: "unknown operator: BOOLEAN - BOOLEAN"},
 		{source: "x;", want: "identifier not found: 'x'"},
 		{source: "let a = 10; y;", want: "identifier not found: 'y'"},
+		{source: "let a = 10; b = 20;", want: "identifier not found: 'b'"},
+		{source: "let a = 10; a = b;", want: "identifier not found: 'b'"},
 		{source: "let function = 1; function(false)", want: "not a function: INTEGER '1'"},
 	}
 
