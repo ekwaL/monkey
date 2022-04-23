@@ -28,9 +28,15 @@ func runProgram(source string) {
 
 	if len(p.Errors()) != 0 {
 		printParseErrors(os.Stderr, p.Errors())
+		os.Exit(65)
 	}
 
-	eval.Eval(program, env)
+	evalResult := eval.Eval(program, env)
+
+	if evalResult != nil && evalResult.Type() == object.ERROR_OBJ {
+		io.WriteString(os.Stderr, evalResult.Inspect()+"\n")
+		os.Exit(70)
+	}
 }
 
 func printParseErrors(out io.Writer, errors []string) {
