@@ -27,7 +27,7 @@ func runProgram(source string) {
 	program := p.ParseProgram()
 
 	if len(p.Errors()) != 0 {
-		printParseErrors(os.Stdout, p.Errors())
+		printParseErrors(os.Stderr, p.Errors())
 	}
 
 	eval.Eval(program, env)
