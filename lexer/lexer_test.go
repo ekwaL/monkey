@@ -14,6 +14,10 @@ let add = fn(x, y) {
 	x + y;
 };
 
+// comment
+      // comment
+  // comment // comment
+
 let result = add(five, ten);
 
 !-/*5;

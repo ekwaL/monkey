@@ -18,7 +18,7 @@ func New(input string) *Lexer {
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
-	l.skipWhitespace()
+	l.skipWhitespaceAndComments()
 
 	switch l.ch {
 	case '+':
@@ -143,8 +143,22 @@ func (l *Lexer) peekChar() byte {
 	}
 }
 
+func (l *Lexer) skipWhitespaceAndComments() {
+	l.skipWhitespace()
+	if l.ch == '/' && l.peekChar() == '/' {
+		l.skipComment()
+		l.skipWhitespaceAndComments()
+	}
+}
+
 func (l *Lexer) skipWhitespace() {
 	for l.ch == ' ' || l.ch == '\n' || l.ch == '\t' || l.ch == '\r' {
+		l.readChar()
+	}
+}
+
+func (l *Lexer) skipComment() {
+    for l.ch != '\n' && l.ch != 0 {
 		l.readChar()
 	}
 }
