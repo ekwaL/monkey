@@ -1,7 +1,9 @@
 package eval
 
 import (
+	"fmt"
 	"monkey/object"
+	"os"
 	"strings"
 )
 
@@ -21,13 +23,13 @@ var builtins = map[string]*object.Builtin{
 	},
 	"print": {
 		Fn: func(args ...object.Object) object.Object {
-			print(stringifyArgs(args))
+			fmt.Fprint(os.Stdout, stringifyArgs(args))
 			return NULL
 		},
 	},
 	"println": {
 		Fn: func(args ...object.Object) object.Object {
-			println(stringifyArgs(args))
+			fmt.Fprintln(os.Stdout, stringifyArgs(args))
 			return NULL
 		},
 	},
