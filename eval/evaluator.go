@@ -18,7 +18,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.Program:
 		return evalProgram(node.Statements, env)
 	case *ast.BlockStmt:
-		return evalBlockStatement(node.Statements, env)
+		return evalBlockStatement(node.Statements, object.NewEnclosedEnvironment(env))
 	case *ast.ExpressionStmt:
 		return Eval(node.Expression, env)
 	case *ast.ReturnStmt:
