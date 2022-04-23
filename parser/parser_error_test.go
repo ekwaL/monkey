@@ -80,26 +80,3 @@ func TestIntParseError(t *testing.T) {
 		t.Errorf("Wrong parser error message. %q should start with %q", msg, want)
 	}
 }
-
-// No error should be thrown since any misstyped bool literal is an identifier.
-// func TestBoolParseError(t *testing.T) {
-// 	source := `
-// 		truefal`
-
-// 	l := lexer.New(source)
-// 	p := parser.New(l)
-
-// 	p.ParseProgram()
-
-// 	errors := p.Errors()
-// 	wantLen := 1
-// 	want := fmt.Sprintf(parser.ERR_COULD_NOT_PARSE_BOOL, "trufal", "")
-
-// 	if len(errors) != wantLen {
-// 		t.Fatalf("Wrong parser error count. Got %d, want %d", len(errors), wantLen)
-// 	}
-
-// 	if msg := errors[0]; !strings.HasPrefix(msg, want) {
-// 		t.Errorf("Wrong parser error message. %q should start with %q", msg, want)
-// 	}
-// }
