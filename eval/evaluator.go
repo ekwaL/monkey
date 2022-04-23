@@ -59,14 +59,14 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 		return evalInfixExpr(left, node.Operator, right)
 	case *ast.AssignExpr:
-		if _, ok := env.Get(node.Identifier.Value); !ok {
-			return identifierNotFoundError(node.Identifier.Value)
-		}
 		val := Eval(node.Expression, env)
 		if isError(val) {
 			return val
 		}
-		env.Set(node.Identifier.Value, val)
+
+		if ok := env.Assign(node.Identifier.Value, val); !ok {
+			return identifierNotFoundError(node.Identifier.Value)
+		}
 		return val
 	case *ast.IfExpr:
 		return evalIfExpr(node, env)
