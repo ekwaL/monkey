@@ -5,6 +5,7 @@ import (
 	"monkey/object"
 	"os"
 	"strings"
+	"time"
 )
 
 var builtins = map[string]*object.Builtin{
@@ -31,6 +32,14 @@ var builtins = map[string]*object.Builtin{
 		Fn: func(args ...object.Object) object.Object {
 			fmt.Fprintln(os.Stdout, stringifyArgs(args))
 			return NULL
+		},
+	},
+	"clock": {
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) != 0 {
+				return wrongArgumentsCountError(0, len(args))
+			}
+			return &object.Integer{Value: int64(time.Now().UnixNano())}
 		},
 	},
 }
