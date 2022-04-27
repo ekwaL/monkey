@@ -8,6 +8,7 @@ import (
 	"monkey/lexer"
 	"monkey/object"
 	"monkey/parser"
+	"monkey/resolver"
 )
 
 const ReplWelcomeMessage = `
@@ -34,6 +35,7 @@ func (r *REPL) Start() {
 
 	scanner := bufio.NewScanner(r.in)
 	env := object.NewEnvironment()
+	res := resolver.New()
 
 	lineNumber := 0
 	for {
@@ -49,9 +51,19 @@ func (r *REPL) Start() {
 		p := parser.New(l)
 
 		program := p.ParseProgram()
+
 		if len(p.Errors()) != 0 {
 			printParseErrors(r.out, p.Errors())
 		}
+
+		res.Resolve(program)
+
+		if len(res.Errors()) != 0 {
+			printParseErrors(r.out, p.Errors())
+		}
+
+		eval.Locals = res.Locals()
+
 		evalResult := eval.Eval(program, env)
 
 		if evalResult != nil {

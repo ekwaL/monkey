@@ -1,9 +1,11 @@
-package eval
+package eval_test
 
 import (
+	"monkey/eval"
 	"monkey/lexer"
 	"monkey/object"
 	"monkey/parser"
+	"monkey/resolver"
 	"testing"
 )
 
@@ -63,6 +65,7 @@ func TestEval(t *testing.T) {
 		{source: "10; return 2 == 3; 20;", want: false},
 		{source: "if (2 > 1) { if (3 > 2) { return 10; }; return 1;};", want: int64(10)},
 		{source: "let a = 10;", want: int64(10)},
+		{source: "let a = 10; let b = a = 20;", want: int64(20)},
 		// {source: "{ 20; let a = 10; }", want: int64(20)},
 		{source: "let a = 10; a;", want: int64(10)},
 		{source: "let a = 10 * 5; a;", want: int64(50)},
@@ -77,11 +80,18 @@ func TestEval(t *testing.T) {
 		{source: "let i = fn(x) { return x; }; i(10);", want: int64(10)},
 		{source: `len("Hello, World!")`, want: int64(13)},
 		{source: `len("")`, want: int64(0)},
+		{source: `len("Hello, World!"); { let len = 10; len; }`, want: int64(10)},
+		{source: `len("Hello, World!"); { let len = 10; len; } len("Hello, World!")`, want: int64(13)},
+		{source: "let x = 10; let y = 10; { let x = x; x = 20; y = x; } x;", want: int64(10)},
+		{source: "let x = 10; let y = 10; { let x = x; x = 20; y = x; } y;", want: int64(20)},
+		{source: "let x = 10; let f = fn() { x }; { f() }", want: int64(10)},
+		{source: "let x = 10; { let f = fn() { x }; let x = 20; f(); }", want: int64(10)},
+		{source: "let x = 10; { let f = fn() { x }; let x = 20; f(); } x;", want: int64(10)},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.source, func(t *testing.T) {
-			got := eval(t, tc.source)
+			got := evalSource(t, tc.source)
 
 			if got == nil {
 				t.Errorf("Error while evaluating %q, got nil, want '%v'.", tc.source, tc.want)
@@ -116,11 +126,13 @@ func TestRuntimeErrorHandling(t *testing.T) {
 		{source: "let a = 10; b = 20;", want: "identifier not found: 'b'"},
 		{source: "let a = 10; a = b;", want: "identifier not found: 'b'"},
 		{source: "let function = 1; function(false)", want: "not a function: INTEGER '1'"},
+		{source: "let x = 10; { let f = x; } f;", want: "identifier not found: 'f'"},
+		{source: `len("Hello, World!"); { let len = 10; len; len("Hello, World!")}`, want: "not a function: INTEGER '10'"},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.source, func(t *testing.T) {
-			got := eval(t, tc.source)
+			got := evalSource(t, tc.source)
 
 			err, ok := got.(*object.Error)
 			if !ok {
@@ -213,7 +225,7 @@ func testObject(t testing.TB, obj object.Object, want interface{}) {
 	}
 }
 
-func eval(t testing.TB, source string) object.Object {
+func evalSource(t testing.TB, source string) object.Object {
 	t.Helper()
 
 	p := parser.New(lexer.New(source))
@@ -222,5 +234,10 @@ func eval(t testing.TB, source string) object.Object {
 		t.Fatalf("Error while parsing %q.", source)
 	}
 
-	return Eval(program, object.NewEnvironment())
+	r := resolver.New()
+	r.Resolve(program)
+
+	eval.Locals = r.Locals()
+
+	return eval.Eval(program, object.NewEnvironment())
 }

@@ -7,6 +7,7 @@ import (
 	"monkey/lexer"
 	"monkey/object"
 	"monkey/parser"
+	"monkey/resolver"
 	"os"
 )
 
@@ -30,6 +31,16 @@ func runProgram(source string) {
 		printParseErrors(os.Stderr, p.Errors())
 		os.Exit(65)
 	}
+
+	r := resolver.New()
+	r.Resolve(program)
+
+	if len(r.Errors()) != 0 {
+		printParseErrors(os.Stderr, r.Errors())
+		os.Exit(65)
+	}
+
+	eval.Locals = r.Locals()
 
 	evalResult := eval.Eval(program, env)
 

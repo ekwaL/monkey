@@ -13,6 +13,8 @@ var (
 	FALSE = &object.Boolean{Value: false}
 )
 
+var Locals = map[*ast.IdentifierExpr]int{}
+
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	case *ast.Program:
@@ -64,9 +66,12 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return val
 		}
 
-		if ok := env.Assign(node.Identifier.Value, val); !ok {
+		if depth, ok := Locals[node.Identifier]; ok {
+			env.AssignAt(depth, node.Identifier.Value, val)
+		} else {
 			return identifierNotFoundError(node.Identifier.Value)
 		}
+
 		return val
 	case *ast.IfExpr:
 		return evalIfExpr(node, env)
@@ -217,8 +222,10 @@ func evalIfExpr(expr *ast.IfExpr, env *object.Environment) object.Object {
 }
 
 func evalIdentifier(node *ast.IdentifierExpr, env *object.Environment) object.Object {
-	if val, ok := env.Get(node.Value); ok {
-		return val
+	if depth, ok := Locals[node]; ok {
+		if val, ok := env.GetAt(depth, node.Value); ok {
+			return val
+		}
 	}
 
 	if builtin, ok := builtins[node.Value]; ok {
@@ -268,7 +275,7 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 		}
 
 		extendedEnv := extendFunctionEnv(fn, args)
-		result := Eval(fn.Body, extendedEnv)
+		result := evalBlockStatement(fn.Body.Statements, extendedEnv)
 		if returnValue, ok := result.(*object.ReturnValue); ok {
 			return returnValue.Value
 		}
