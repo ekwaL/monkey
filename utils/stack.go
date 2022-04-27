@@ -5,6 +5,7 @@ type Stack[T any] interface {
 	Pop() (T, bool)
 	Peek() (T, bool)
 	IsEmpty() bool
+	List() []T
 }
 
 type stack[T any] struct {
@@ -46,6 +47,10 @@ func (s *stack[T]) Peek() (T, bool) {
 
 	el := s.arr[s.top]
 	return el, true
+}
+
+func (s *stack[T]) List() []T {
+	return s.arr[:s.top+1]
 }
 
 func (s *stack[T]) IsEmpty() bool {

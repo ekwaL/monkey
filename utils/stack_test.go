@@ -2,6 +2,7 @@ package utils_test
 
 import (
 	"monkey/utils"
+	"reflect"
 	"testing"
 )
 
@@ -24,11 +25,19 @@ func TestStack(t *testing.T) {
 		t.Error("Stack should be empty but it's not.")
 	}
 
+	if l := s.List(); !reflect.DeepEqual(l, []int{}) {
+		t.Errorf("Got wrong List, want %v, got %v.", []int{}, l)
+	}
+
 	push := []int{1, 2, 3, 4, 5}
 	pop := []int{5, 4, 3, 2, 1}
 
 	for _, p := range push {
 		s.Push(p)
+	}
+
+	if l := s.List(); !reflect.DeepEqual(l, push) {
+		t.Errorf("Got wrong List, want %v, got %v.", push, l)
 	}
 
 	if s.IsEmpty() {
@@ -53,6 +62,10 @@ func TestStack(t *testing.T) {
 		if got != want {
 			t.Errorf("Got wrong element on Pop. Want %v got %v.", want, got)
 		}
+	}
+
+	if l := s.List(); !reflect.DeepEqual(l, []int{}) {
+		t.Errorf("Got wrong List, want %v, got %v.", []int{}, l)
 	}
 
 	if !s.IsEmpty() {
