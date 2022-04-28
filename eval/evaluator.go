@@ -1,7 +1,6 @@
 package eval
 
 import (
-	"fmt"
 	"monkey/ast"
 	"monkey/object"
 	"monkey/token"
@@ -82,8 +81,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.CallExpr:
 		return evalCallExpr(node, env)
 	default:
-		println(fmt.Sprintf("eval is unimplemented for %T", node))
-		return nil
+		return NULL
 	}
 }
 

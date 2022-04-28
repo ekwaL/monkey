@@ -14,6 +14,7 @@ func TestParser(t *testing.T) {
 		let x = 5;
 		let y = 10;
 		let foobarbaz = 10;
+		let x;
 		`
 	program := parse(t, source)
 
@@ -21,18 +22,19 @@ func TestParser(t *testing.T) {
 		t.Fatal("ParseProgram() returned 'nil'.")
 	}
 
-	wantLen := 3
+	wantLen := 4
 	if len(program.Statements) != wantLen {
 		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
 	}
 
 	tt := []struct {
 		expectedIdentifier string
-		expectedValue      int64
+		expectedValue      interface{}
 	}{
 		{expectedIdentifier: "x", expectedValue: 5},
 		{expectedIdentifier: "y", expectedValue: 10},
 		{expectedIdentifier: "foobarbaz", expectedValue: 10},
+		{expectedIdentifier: "x", expectedValue: nil},
 	}
 
 	for i, tc := range tt {
@@ -40,7 +42,13 @@ func TestParser(t *testing.T) {
 		if !testLetStatement(t, stmt, tc.expectedIdentifier) {
 			return
 		}
-		testIdentifierOrLiteralExpr(t, stmt.(*ast.LetStmt).Value, tc.expectedValue)
+		if stmt.(*ast.LetStmt).Value == nil {
+			if tc.expectedValue != nil {
+				t.Errorf("Want Let.Value to be nil, got %v.", tc.expectedValue)
+			}
+		} else {
+			testIdentifierOrLiteralExpr(t, stmt.(*ast.LetStmt).Value, tc.expectedValue)
+		}
 	}
 
 }

@@ -18,6 +18,11 @@ func (p *Parser) parseLetStmt() *ast.LetStmt {
 
 	name := p.parseIdentifierExpr().(*ast.IdentifierExpr)
 
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+		return &ast.LetStmt{Token: tok, Name: name, Value: nil}
+	}
+
 	if !p.expectPeek(token.ASSIGN, ERR_LET_NO_ASSIGN_AFTER_IDENTIFIER) {
 		return nil
 	}

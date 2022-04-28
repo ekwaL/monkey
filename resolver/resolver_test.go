@@ -15,6 +15,7 @@ func TestResolver(t *testing.T) {
 		want   map[string]int
 	}{
 		{source: "x;", want: map[string]int{}},
+		{source: "let x; x;", want: map[string]int{"x": 0}},
 		{source: "let x = 10; x;", want: map[string]int{"x": 0}},
 		{source: "let x = 10; { let f = x; }", want: map[string]int{"x": 1}},
 		{source: "let x = 10; { let x = x; }", want: map[string]int{"x": 1}},
