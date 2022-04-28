@@ -16,11 +16,15 @@ type resolver struct {
 }
 
 func New() *resolver {
-	return &resolver{
+	r := &resolver{
 		scopes: utils.NewStack[map[string]bool](),
 		locals: make(map[*ast.IdentifierExpr]int),
 		errors: []string{},
 	}
+
+	r.beginScope()
+
+	return r
 }
 
 func (r *resolver) Locals() map[*ast.IdentifierExpr]int {
@@ -34,9 +38,7 @@ func (r *resolver) Errors() []string {
 func (r *resolver) Resolve(node ast.Node) {
 	switch node := node.(type) {
 	case *ast.Program:
-		r.beginScope()
 		r.resolveStatements(node.Statements)
-		r.endScope()
 	case *ast.BlockStmt:
 		r.beginScope()
 		r.resolveStatements(node.Statements)
