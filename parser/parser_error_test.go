@@ -24,8 +24,16 @@ func TestParserError(t *testing.T) {
 		fn (x) { true; };
 		fn (1) { true; };
 		fn (x) true;
+		fn x { 1 }
+		fn x (i, { true };
+		fn x(x) { true; };
+		fn x(1) { true; };
+		fn x(x) true
+
+		fn x(x) { !true;
 		fn (x) { !true;
 		`
+
 	l := lexer.New(source)
 	p := parser.New(l)
 
@@ -43,18 +51,35 @@ func TestParserError(t *testing.T) {
 		parser.ERR_FN_PARAMETERS_END_RPAREN,
 		fmt.Sprintf(parser.ERR_FN_PARAMETER_SHOULD_BE_IDENTIFIER, "1"),
 		parser.ERR_FN_BODY_START_LBRACE,
+		parser.ERR_FN_PARAMETERS_START_LPAREN,
+		fmt.Sprintf(parser.ERR_FN_PARAMETER_SHOULD_BE_IDENTIFIER, "{"),
+		parser.ERR_FN_PARAMETERS_END_RPAREN,
+		fmt.Sprintf(parser.ERR_FN_PARAMETER_SHOULD_BE_IDENTIFIER, "1"),
+		parser.ERR_FN_BODY_START_LBRACE,
+		parser.ERR_FN_BODY_END_RBRACE,
 		parser.ERR_FN_BODY_END_RBRACE,
 	}
 
 	errors := p.Errors()
 	if len(errors) != len(expect) {
-		t.Fatalf("Wrong parser error count. Got %d, want %d", len(errors), len(expect))
+		// t.Fatalf("Wrong parser error count. Got %d, want %d", len(errors), len(expect))
+		t.Errorf("Wrong parser error count. Got %d, want %d", len(errors), len(expect))
 	}
 
-	for i, msg := range errors {
-		if want := expect[i]; want != msg {
-			t.Errorf("Wrong parser error message. Got %q, want %q", msg, want)
+	i := 0
+	for _, msg := range errors {
+		if i >= len(expect) {
+			t.Errorf("%d: Wrong parser error message. \nGot %q, \nwant nothing", i, msg)
+		} else {
+			if want := expect[i]; want != msg {
+				t.Errorf("%d: Wrong parser error message. \nGot %q, \nwant %q", i, msg, want)
+			}
 		}
+		i++
+	}
+
+	for ; i < len(expect); i++ {
+		t.Errorf("Want %q, \ngot nothing", expect[i])
 	}
 }
 

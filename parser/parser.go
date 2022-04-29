@@ -120,6 +120,9 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.LBRACE:
 		return p.parseBlockStmt()
 	default:
+		if p.currToken.Type == token.FUNCTION && p.peekTokenIs(token.IDENTIFIER) {
+			return p.parseFunctionDefinition()
+		}
 		return p.parseExpressionStmt()
 	}
 }

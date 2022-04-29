@@ -81,6 +81,8 @@ func TestEval(t *testing.T) {
 		{source: "let x = fn(a, b) { a + b }; x;", want: &expectFn{[]string{"a", "b"}, "{ (a + b); }"}},
 		{source: "let i = fn(x) { x }; i(10);", want: int64(10)},
 		{source: "let i = fn(x) { return x; }; i(10);", want: int64(10)},
+		{source: "fn f(x) { x }; f(10);", want: int64(10)},
+		{source: "fn f(x) { return x } f(10);", want: int64(10)},
 		{source: `len("Hello, World!")`, want: int64(13)},
 		{source: `len("")`, want: int64(0)},
 		{source: `len("Hello, World!"); { let len = 10; len; }`, want: int64(10)},
@@ -90,6 +92,7 @@ func TestEval(t *testing.T) {
 		{source: "let x = 10; let f = fn() { x }; { f() }", want: int64(10)},
 		{source: "let x = 10; { let f = fn() { x }; let x = 20; f(); }", want: int64(10)},
 		{source: "let x = 10; { let f = fn() { x }; let x = 20; f(); } x;", want: int64(10)},
+		{source: "let x = 10; { fn f() { x }; let x = 20; f(); } x;", want: int64(10)},
 	}
 
 	for _, tc := range tt {

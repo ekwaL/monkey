@@ -213,7 +213,51 @@ func TestFunctionExpression(t *testing.T) {
 	}
 
 	if len(fnExpr.Parameters) != 2 {
-		t.Errorf("Wrong parameters count: want 1, got %d", len(fnExpr.Parameters))
+		t.Errorf("Wrong parameters count: want 2, got %d", len(fnExpr.Parameters))
+	}
+	testIdentifierOrLiteralExpr(t, fnExpr.Parameters[0], "i")
+	testIdentifierOrLiteralExpr(t, fnExpr.Parameters[1], "j")
+
+	if len(fnExpr.Body.Statements) != 1 {
+		t.Errorf("Wrong body statements count: want 1, got %d", len(fnExpr.Parameters))
+	}
+
+	cons, ok := fnExpr.Body.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("First body statement is not an ExpressionStmt, got %T",
+			fnExpr.Body.Statements[0])
+	}
+	testInfixExpr(t, cons.Expression, "i", "-", "j")
+}
+
+func TestFunctionDefinition(t *testing.T) {
+	source := `
+		fn minus(i, j) { i - j; }`
+	program := parse(t, source)
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	wantLen := 1
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	testLetStatement(t, stmt, "minus")
+	letStmt, ok := stmt.(*ast.LetStmt)
+	expr := letStmt.Value
+	fnExpr, ok := expr.(*ast.FunctionExpr)
+	if !ok {
+		t.Fatalf("expr is not *ast.FunctionExpr. Got %T.", expr)
+	}
+	if fnExpr.TokenLiteral() != "fn" {
+		t.Errorf("Wrong TokenLiteral, want 'fn', got %q.", fnExpr.TokenLiteral())
+	}
+
+	if len(fnExpr.Parameters) != 2 {
+		t.Errorf("Wrong parameters count: want 2, got %d", len(fnExpr.Parameters))
 	}
 	testIdentifierOrLiteralExpr(t, fnExpr.Parameters[0], "i")
 	testIdentifierOrLiteralExpr(t, fnExpr.Parameters[1], "j")
