@@ -6,7 +6,12 @@ import (
 )
 
 func (p *Parser) parseReturnStmt() *ast.ReturnStmt {
-	r := &ast.ReturnStmt{Token: p.currToken }
+	r := &ast.ReturnStmt{Token: p.currToken}
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+		return r
+	}
 
 	p.nextToken()
 

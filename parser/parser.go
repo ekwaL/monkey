@@ -18,6 +18,7 @@ const (
 	PRODUCT     // *
 	PREFIX      // -X || !x
 	CALL        // function()
+	GET         // obj.field
 )
 
 var precedences = map[token.TokenType]int{
@@ -31,6 +32,7 @@ var precedences = map[token.TokenType]int{
 	token.SLASH:       PRODUCT,
 	token.STAR:        PRODUCT,
 	token.LPAREN:      CALL,
+	token.DOT:         GET,
 }
 
 const ERR_NO_PREFIX_PARSLET_FOUND = "No prefix parslet found for %q."
@@ -73,6 +75,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.LPAREN, p.parseGroupingExpr)
 	p.registerPrefix(token.IF, p.parseIfExpr)
 	p.registerPrefix(token.FUNCTION, p.parseFunctionExpr)
+	p.registerPrefix(token.THIS, p.parseThisExpr)
+	p.registerPrefix(token.SUPER, p.parseSuperExpr)
 
 	p.infixParslets = make(map[token.TokenType]infixParslet)
 	p.registerInfix(token.PLUS, p.parseInfixExpr)
@@ -85,6 +89,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.NOT_EQUAL, p.parseInfixExpr)
 	p.registerInfix(token.LPAREN, p.parseCallExpr)
 	p.registerInfix(token.ASSIGN, p.parseAssignExpr)
+	p.registerInfix(token.DOT, p.parseGetExpr)
 	return &p
 }
 
@@ -119,6 +124,8 @@ func (p *Parser) parseStatement() ast.Statement {
 		return p.parseReturnStmt()
 	case token.LBRACE:
 		return p.parseBlockStmt()
+	case token.CLASS:
+		return p.parseClassStmt()
 	default:
 		if p.currToken.Type == token.FUNCTION && p.peekTokenIs(token.IDENTIFIER) {
 			return p.parseFunctionDefinition()
@@ -171,13 +178,17 @@ func (p *Parser) error(msg string) {
 
 func (p *Parser) synchronize() {
 	p.needSync = false
-	p.nextToken()
+
+	if p.currToken.Type != token.SEMICOLON {
+		p.nextToken()
+	}
+
 	for p.currToken.Type != token.EOF {
 		switch p.currToken.Type {
 		case token.SEMICOLON:
 			p.nextToken()
 			return
-		case token.LET, token.FUNCTION, token.RETURN, token.IF:
+		case token.LET, token.FUNCTION, token.RETURN, token.IF, token.CLASS:
 			return
 		default:
 			p.nextToken()

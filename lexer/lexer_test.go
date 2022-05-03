@@ -36,6 +36,11 @@ if (5 < 10) {
 
 "string indeed";
 let x = "str";
+
+class A {}
+instance.field;
+this;
+super;
 `
 
 func TestNextToken(t *testing.T) {
@@ -164,6 +169,23 @@ func TestNextToken(t *testing.T) {
 		{token.IDENTIFIER, "x"},
 		{token.ASSIGN, "="},
 		{token.STRING, "str"},
+		{token.SEMICOLON, ";"},
+
+		// class A {}
+		{token.CLASS, "class"},
+		{token.IDENTIFIER, "A"},
+		{token.LBRACE, "{"},
+		{token.RBRACE, "}"},
+		// instance.field;
+		{token.IDENTIFIER, "instance"},
+		{token.DOT, "."},
+		{token.IDENTIFIER, "field"},
+		{token.SEMICOLON, ";"},
+		// this;
+		{token.THIS, "this"},
+		{token.SEMICOLON, ";"},
+		// super;
+		{token.SUPER, "super"},
 		{token.SEMICOLON, ";"},
 
 		{token.EOF, "\x00"},

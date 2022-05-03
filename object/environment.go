@@ -2,7 +2,7 @@ package object
 
 type Environment struct {
 	store map[string]Object
-	outer *Environment
+	Outer *Environment
 }
 
 func NewEnvironment() *Environment {
@@ -13,7 +13,7 @@ func NewEnvironment() *Environment {
 
 func NewEnclosedEnvironment(outer *Environment) *Environment {
 	env := NewEnvironment()
-	env.outer = outer
+	env.Outer = outer
 	return env
 }
 
@@ -34,7 +34,7 @@ func (e *Environment) AssignAt(depth int, name string, value Object) {
 func (e *Environment) ancestor(depth int) *Environment {
 	env := e
 	for i := 0; i < depth; i++ {
-		env = env.outer
+		env = env.Outer
 	}
 
 	return env

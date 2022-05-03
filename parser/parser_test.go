@@ -55,11 +55,11 @@ func TestParser(t *testing.T) {
 
 func TestReturnStatement(t *testing.T) {
 	source := `
+		return;
 		return 5;
-		return 9999;
 		`
 	program := parse(t, source)
-	expect := []int64{5, 9999}
+	expect := []interface{}{nil, int64(5)}
 
 	if program == nil {
 		t.Fatal("ParseProgram() returned 'nil'.")
@@ -274,6 +274,90 @@ func TestFunctionDefinition(t *testing.T) {
 	testInfixExpr(t, cons.Expression, "i", "-", "j")
 }
 
+func TestClassDefinition(t *testing.T) {
+	source := `
+		class Hello < World {
+			fn minus(i, j) { this; super.method; i - j; }
+		}`
+	program := parse(t, source)
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	wantLen := 1
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	classStmt, ok := stmt.(*ast.ClassStmt)
+	if !ok {
+		t.Fatalf("stmt is not *ast.ClassStmt. Got %T.", stmt)
+	}
+	testIdentifierExpression(t, classStmt.Name, "Hello")
+	testIdentifierExpression(t, classStmt.Superclass, "World")
+
+	wantMethodsLen := 1
+	if len(classStmt.Methods) != wantMethodsLen {
+		t.Fatalf("class.Props len is %d, want %d .", len(classStmt.Methods), wantMethodsLen)
+	}
+
+	method := classStmt.Methods[0]
+	expr := method.Value
+	fnExpr, ok := expr.(*ast.FunctionExpr)
+	if !ok {
+		t.Fatalf("expr is not *ast.FunctionExpr. Got %T.", expr)
+	}
+	if fnExpr.TokenLiteral() != "fn" {
+		t.Errorf("Wrong TokenLiteral, want 'fn', got %q.", fnExpr.TokenLiteral())
+	}
+
+	if len(fnExpr.Parameters) != 2 {
+		t.Errorf("Wrong parameters count: want 2, got %d", len(fnExpr.Parameters))
+	}
+	testIdentifierOrLiteralExpr(t, fnExpr.Parameters[0], "i")
+	testIdentifierOrLiteralExpr(t, fnExpr.Parameters[1], "j")
+
+	if len(fnExpr.Body.Statements) != 3 {
+		t.Errorf("Wrong body statements count: want 3, got %d", len(fnExpr.Parameters))
+	}
+
+	exprStmt, ok := fnExpr.Body.Statements[0].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("First body statement is not an ExpressionStmt, got %T",
+			fnExpr.Body.Statements[0])
+	}
+	this, ok := exprStmt.Expression.(*ast.ThisExpr)
+	if !ok {
+		t.Fatalf("First body expression is not an ThisExpr, got %T", exprStmt.Expression)
+	}
+	if this.TokenLiteral() != "this" {
+		t.Errorf("Wrong TokenLiteral, want 'this', got %q.", this.TokenLiteral())
+	}
+
+	exprStmt, ok = fnExpr.Body.Statements[1].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("Second body statement is not an ExpressionStmt, got %T",
+			fnExpr.Body.Statements[1])
+	}
+	super, ok := exprStmt.Expression.(*ast.SuperExpr)
+	if !ok {
+		t.Fatalf("Second body expression is not an SuperExpr, got %T", exprStmt.Expression)
+	}
+	if super.TokenLiteral() != "super" {
+		t.Errorf("Wrong TokenLiteral, want 'super', got %q.", super.TokenLiteral())
+	}
+	testIdentifierOrLiteralExpr(t, super.Method, "method")
+
+	cons, ok := fnExpr.Body.Statements[2].(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("First body statement is not an ExpressionStmt, got %T",
+			fnExpr.Body.Statements[2])
+	}
+	testInfixExpr(t, cons.Expression, "i", "-", "j")
+}
+
 func TestCallExpression(t *testing.T) {
 	source := `
 		fun(1, true == false);`
@@ -312,6 +396,79 @@ func TestCallExpression(t *testing.T) {
 	testIdentifierOrLiteralExpr(t, callExpr.Arguments[0], 1)
 	testInfixExpr(t, callExpr.Arguments[1], true, "==", false)
 	testIdentifierOrLiteralExpr(t, callExpr.Function, "fun")
+}
+
+func TestGetExpression(t *testing.T) {
+	source := `
+		obj.field;`
+	program := parse(t, source)
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	wantLen := 1
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	exprStmt, ok := stmt.(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+	}
+	if exprStmt.TokenLiteral() != "obj" {
+		t.Errorf("Wrong TokenLiteral, want 'obj', got %q.", exprStmt.TokenLiteral())
+	}
+
+	expr := exprStmt.Expression
+	getExpr, ok := expr.(*ast.GetExpr)
+	if !ok {
+		t.Fatalf("expr is not *ast.GetExpr. Got %T.", expr)
+	}
+	if getExpr.TokenLiteral() != "." {
+		t.Errorf("Wrong TokenLiteral, want '.', got %q.", getExpr.TokenLiteral())
+	}
+
+	testIdentifierOrLiteralExpr(t, getExpr.Expression, "obj")
+	testIdentifierOrLiteralExpr(t, getExpr.Field, "field")
+}
+
+func TestSetExpression(t *testing.T) {
+	source := `
+		obj.field = 10;`
+	program := parse(t, source)
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	wantLen := 1
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	exprStmt, ok := stmt.(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+	}
+	if exprStmt.TokenLiteral() != "obj" {
+		t.Errorf("Wrong TokenLiteral, want 'obj', got %q.", exprStmt.TokenLiteral())
+	}
+
+	expr := exprStmt.Expression
+	setExpr, ok := expr.(*ast.SetExpr)
+	if !ok {
+		t.Fatalf("expr is not *ast.SetExpr. Got %T.", expr)
+	}
+	if setExpr.TokenLiteral() != "=" {
+		t.Errorf("Wrong TokenLiteral, want '=', got %q.", setExpr.TokenLiteral())
+	}
+
+	testIdentifierOrLiteralExpr(t, setExpr.Expression, "obj")
+	testIdentifierOrLiteralExpr(t, setExpr.Field, "field")
+	testIdentifierOrLiteralExpr(t, setExpr.Value, 10)
 }
 
 func TestIdentifierExpressionStatement(t *testing.T) {
@@ -565,6 +722,10 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"1 + a(b * c) - 3", "((1 + a((b * c))) - 3)"},
 		{"a(1, 2, b, a(b * c, 3))", "a(1, 2, b, a((b * c), 3))"},
 		{"a(1 + 2 / 3 - 4)", "a(((1 + (2 / 3)) - 4))"},
+		{"a.b.c()", "((a.b).c)()"},
+		{"a.b().c()", "((a.b)().c)()"},
+		{"a.b.c = 10;", "((a.b).c = 10)"},
+		{"a.b().c = 10;", "((a.b)().c = 10)"},
 	}
 
 	for _, tc := range tt {

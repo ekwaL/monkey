@@ -3,6 +3,7 @@ package object
 import (
 	"bytes"
 	"monkey/ast"
+	"monkey/token"
 	"strconv"
 )
 
@@ -18,6 +19,8 @@ const (
 	ERROR_OBJ        = "ERROR"
 	FUNCTION_OBJ     = "FUNCTION"
 	BUILTIN_OBJ      = "BUILTIN"
+	CLASS_OBJ        = "CLASS"
+	INSTANCE_OBJ     = "INSTANCE"
 )
 
 type Object interface {
@@ -69,6 +72,7 @@ type Function struct {
 	Parameters []*ast.IdentifierExpr
 	Body       *ast.BlockStmt
 	Env        *Environment
+	IsInit     bool
 }
 
 func (f *Function) Type() ObjectType { return FUNCTION_OBJ }
@@ -84,11 +88,20 @@ func (f *Function) Inspect() string {
 		}
 	}
 	out.WriteString(") ")
-	// out.WriteString(") {\n")
 	out.WriteString(f.Body.String())
-	// out.WriteString("\n}")
 
 	return out.String()
+}
+
+func (f *Function) Bind(inst *Instance) *Function {
+	env := NewEnclosedEnvironment(f.Env)
+	env.Set(token.THIS_KEYWORD, inst)
+	return &Function{
+		Parameters: f.Parameters,
+		Body:       f.Body,
+		Env:        env,
+		IsInit:     f.IsInit,
+	}
 }
 
 type Builtin struct {
@@ -97,3 +110,37 @@ type Builtin struct {
 
 func (b *Builtin) Type() ObjectType { return BUILTIN_OBJ }
 func (b *Builtin) Inspect() string  { return "builtin function" }
+
+type Class struct {
+	Name    *ast.IdentifierExpr
+	Super   *Class
+	Methods map[string]*Function
+}
+
+func (c *Class) Type() ObjectType { return CLASS_OBJ }
+func (c *Class) Inspect() string {
+	return "<class " + c.Name.Value + ">"
+}
+
+func (c *Class) FindMethod(name string) *Function {
+	fn, ok := c.Methods[name]
+	if ok {
+		return fn
+	}
+
+	if c.Super != nil {
+		return c.Super.FindMethod(name)
+	}
+
+	return nil
+}
+
+type Instance struct {
+	Class  *Class
+	Fields map[string]Object
+}
+
+func (i *Instance) Type() ObjectType { return INSTANCE_OBJ }
+func (i *Instance) Inspect() string {
+	return "<instance of " + i.Class.Name.Value + ">"
+}

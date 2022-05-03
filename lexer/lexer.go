@@ -69,6 +69,8 @@ func (l *Lexer) NextToken() token.Token {
 		tok = makeToken(token.LBRACE, l.ch)
 	case '}':
 		tok = makeToken(token.RBRACE, l.ch)
+	case '.':
+		tok = makeToken(token.DOT, l.ch)
 	case ',':
 		tok = makeToken(token.COMMA, l.ch)
 	case ';':
@@ -158,7 +160,7 @@ func (l *Lexer) skipWhitespace() {
 }
 
 func (l *Lexer) skipComment() {
-    for l.ch != '\n' && l.ch != 0 {
+	for l.ch != '\n' && l.ch != 0 {
 		l.readChar()
 	}
 }

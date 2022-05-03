@@ -33,6 +33,7 @@ const (
 	LESS_EQUAL    = "<="
 	GREATER_EQUAL = ">="
 
+	DOT       = "."
 	COMMA     = ","
 	SEMICOLON = ";"
 
@@ -42,6 +43,9 @@ const (
 	RBRACE = "}"
 
 	// Keywords
+	CLASS    = "CLASS"
+	THIS     = "THIS"
+	SUPER    = "SUPER"
 	FUNCTION = "FUNCTION"
 	LET      = "LET"
 	RETURN   = "RETURN"
@@ -51,14 +55,23 @@ const (
 	FALSE    = "FALSE"
 )
 
+const (
+	THIS_KEYWORD        = "this"
+	SUPER_KEYWORD       = "super"
+	INITIALIZER_KEYWORD = "init"
+)
+
 var keywords = map[string]TokenType{
-	"let":    LET,
-	"fn":     FUNCTION,
-	"return": RETURN,
-	"if":     IF,
-	"else":   ELSE,
-	"true":   TRUE,
-	"false":  FALSE,
+	"let":         LET,
+	"class":       CLASS,
+	THIS_KEYWORD:  THIS,
+	SUPER_KEYWORD: SUPER,
+	"fn":          FUNCTION,
+	"return":      RETURN,
+	"if":          IF,
+	"else":        ELSE,
+	"true":        TRUE,
+	"false":       FALSE,
 }
 
 func LookupKeyword(identifier string) TokenType {

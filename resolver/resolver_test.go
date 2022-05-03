@@ -23,7 +23,7 @@ func TestResolver(t *testing.T) {
 		{source: "let x = 10; x = x + 1;", want: map[string]int{"x": 0}},
 		{source: "let x = 10; { x; }", want: map[string]int{"x": 1}},
 		{source: "let x = 10; x = 20;", want: map[string]int{"x": 0}},
-		{source: "let x = true; return !x;", want: map[string]int{"x": 0}},
+		{source: "{ let x = true; return !x; }", want: map[string]int{"x": 0}},
 		{source: "let a = 1; let b = 2; return a + b;", want: map[string]int{"a": 0, "b": 0}},
 		{
 			source: "let x = true; let a = 1; let b = 2; if (x) a else b;",
@@ -36,6 +36,28 @@ func TestResolver(t *testing.T) {
 		{
 			source: "let x = 10; let f = fn() { x }; { f() }",
 			want:   map[string]int{"f": 1, "x": 1},
+		},
+		{
+			source: "class A < B {}",
+			want:   map[string]int{},
+		},
+		{
+			source: "class B {} class A < B {}",
+			want:   map[string]int{"B": 0},
+		},
+		{
+			source: `class A {
+					fn init(n) { this.x = n; }
+					fn method() {
+						class B < A { fn m() { super.init(10) } }
+						B();
+					}
+				  }`,
+			want: map[string]int{"A": 2, "this": 1, "B": 0, "n": 0, "super": 2},
+		},
+		{
+			source: "let x = 1; class B {} { class A < B { fn f() { x = 20; }} }",
+			want:   map[string]int{"B": 1, "x": 4},
 		},
 	}
 
@@ -52,7 +74,16 @@ func TestResolver(t *testing.T) {
 
 			got := make(map[string]int)
 			for name, depth := range locals {
-				got[name.Value] = depth
+				switch local := name.(type) {
+				case *ast.IdentifierExpr:
+					got[local.Value] = depth
+				case *ast.ThisExpr:
+					got[local.TokenLiteral()] = depth
+				case *ast.SuperExpr:
+					got[local.TokenLiteral()] = depth
+				default:
+					t.Fatalf("Expect local to be an Identifier, This or Super, got %T.", name)
+				}
 			}
 
 			if !reflect.DeepEqual(got, tc.want) {
@@ -78,6 +109,36 @@ func TestResolverErrorHandling(t *testing.T) {
 		{source: "let x = 10; let x = x;", want: []string{"Variable 'x' is already declared in current scope."}},
 		{source: "let x = 10; let x = y;", want: []string{"Variable 'x' is already declared in current scope."}},
 		{source: "let x = 10; { let x = y; }", want: []string{}},
+		// {
+		// 	source: "return;",
+		// 	want:   []string{resolver.ERR_TOP_LEVEL_RETURN},
+		// },
+		{
+			source: `
+					class X {
+						fn init() {
+							return 10;
+						}
+					}
+			`,
+			want: []string{resolver.ERR_INITIALIZER_VAL_RETURN},
+		},
+		{
+			source: "class A < A {}",
+			want:   []string{"Class 'A' can not inherit from itself."},
+		},
+		{
+			source: "this;",
+			want:   []string{resolver.ERR_THIS_OUTSIDE_OF_CLASS},
+		},
+		{
+			source: "super.method;",
+			want:   []string{resolver.ERR_SUPER_OUTSIDE_OF_CLASS},
+		},
+		{
+			source: "class A { fn f() { super.method; } }",
+			want:   []string{resolver.ERR_SUPER_WITHOUT_SUPERCLASS},
+		},
 	}
 
 	for _, tc := range tt {
@@ -102,7 +163,7 @@ func TestResolverErrorHandling(t *testing.T) {
 	}
 }
 
-func resolve(t testing.TB, source string) (map[*ast.IdentifierExpr]int, []string) {
+func resolve(t testing.TB, source string) (map[ast.Expression]int, []string) {
 	t.Helper()
 
 	p := parser.New(lexer.New(source))

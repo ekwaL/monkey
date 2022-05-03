@@ -12,7 +12,7 @@ var (
 	FALSE = &object.Boolean{Value: false}
 )
 
-var Locals = map[*ast.IdentifierExpr]int{}
+var Locals = map[ast.Expression]int{}
 
 func Eval(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
@@ -23,10 +23,18 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.ExpressionStmt:
 		return Eval(node.Expression, env)
 	case *ast.ReturnStmt:
-		val := Eval(node.Value, env)
+		var val object.Object
+
+		if node.Value == nil {
+			val = NULL
+		} else {
+			val = Eval(node.Value, env)
+		}
+
 		if isError(val) {
 			return val
 		}
+
 		return &object.ReturnValue{Value: val}
 	case *ast.LetStmt:
 		val := Eval(node.Value, env)
@@ -35,6 +43,12 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 		env.Set(node.Name.Value, val)
 		return val
+	case *ast.ClassStmt:
+		return evalClassStmt(node, env)
+	case *ast.ThisExpr:
+		return lookupVariable(token.THIS_KEYWORD, node, env)
+	case *ast.SuperExpr:
+		return evalSuperExpr(node, env)
 	case *ast.IntLiteralExpr:
 		return &object.Integer{Value: node.Value}
 	case *ast.BoolLiteralExpr:
@@ -59,6 +73,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 
 		return evalInfixExpr(left, node.Operator, right)
+	case *ast.GetExpr:
+		return evalGetExpr(node, env)
+	case *ast.SetExpr:
+		return evalSetExpr(node, env)
 	case *ast.AssignExpr:
 		val := Eval(node.Expression, env)
 		if isError(val) {
@@ -77,7 +95,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.IdentifierExpr:
 		return evalIdentifier(node, env)
 	case *ast.FunctionExpr:
-		return evalFunctionExpr(node, env)
+		return evalFunctionExpr(node, env, false)
 	case *ast.CallExpr:
 		return evalCallExpr(node, env)
 	default:
@@ -111,6 +129,96 @@ func evalBlockStatement(statements []ast.Statement, env *object.Environment) (re
 		}
 	}
 	return
+}
+
+func evalClassStmt(node *ast.ClassStmt, env *object.Environment) object.Object {
+	var super *object.Class = nil
+	if node.Superclass != nil {
+		sc := Eval(node.Superclass, env)
+
+		if isError(sc) {
+			return sc
+		}
+
+		if superclass, ok := sc.(*object.Class); ok {
+			super = superclass
+		} else {
+			return superclassMustBeClassError(node.Name.Value, sc.Type())
+		}
+	}
+
+	// env.Set(node.Name.Value, nil) // declare
+
+	if super != nil {
+		env = object.NewEnclosedEnvironment(env)
+		env.Set(token.SUPER_KEYWORD, super)
+	}
+
+	methods := make(map[string]*object.Function)
+	for _, field := range node.Methods {
+		if method, ok := field.Value.(*ast.FunctionExpr); ok {
+			isInit := false
+			if field.Name.Value == token.INITIALIZER_KEYWORD {
+				isInit = true
+			}
+			fn := evalFunctionExpr(method, env, isInit)
+			methods[field.Name.Value] = fn
+		}
+	}
+
+	class := &object.Class{
+		Name:    node.Name,
+		Super:   super,
+		Methods: methods,
+	}
+
+	if super != nil {
+		env = env.Outer
+	}
+
+	env.Set(node.Name.Value, class)
+	return class
+}
+
+func evalGetExpr(node *ast.GetExpr, env *object.Environment) object.Object {
+	obj := Eval(node.Expression, env)
+	if isError(obj) {
+		return obj
+	}
+
+	if obj.Type() != object.INSTANCE_OBJ {
+		return wrongGetTargetError(obj.Type(), node.Field.Value)
+	}
+
+	inst := obj.(*object.Instance)
+	if field, ok := inst.Fields[node.Field.Value]; ok {
+		return field
+	} else if method := inst.Class.FindMethod(node.Field.Value); method != nil {
+		return method.Bind(inst)
+	} else {
+		return undefinedPropertyError(node.Field.Value)
+	}
+}
+
+func evalSetExpr(node *ast.SetExpr, env *object.Environment) object.Object {
+	obj := Eval(node.Expression, env)
+	if isError(obj) {
+		return obj
+	}
+
+	inst, ok := obj.(*object.Instance)
+	if !ok {
+		return wrongSetTargetError(obj.Type(), node.Field.Value)
+	}
+
+	val := Eval(node.Value, env)
+	if isError(val) {
+		return val
+	}
+
+	inst.Fields[node.Field.Value] = val
+
+	return val
 }
 
 func evalPrefixExpr(operator string, right object.Object) object.Object {
@@ -219,25 +327,64 @@ func evalIfExpr(expr *ast.IfExpr, env *object.Environment) object.Object {
 	}
 }
 
+func evalSuperExpr(node *ast.SuperExpr, env *object.Environment) object.Object {
+	depth, ok := Locals[node]
+	if !ok {
+		return internalResolveSuperError(node)
+	}
+
+	super, ok := env.GetAt(depth, token.SUPER_KEYWORD)
+	if !ok {
+		return internalResolveSuperError(node)
+	}
+
+	superClass, ok := super.(*object.Class)
+	if !ok {
+		return internalResolveSuperError(node)
+	}
+
+	inst, ok := env.GetAt(depth-1, token.THIS_KEYWORD)
+	if !ok {
+		return internalResolveSuperError(node)
+	}
+
+	instObj, ok := inst.(*object.Instance)
+	if !ok {
+		return internalResolveSuperError(node)
+	}
+
+	fn := superClass.FindMethod(node.Method.Value)
+	if fn == nil {
+		undefinedPropertyError(node.Method.Value)
+	}
+
+	return fn.Bind(instObj)
+}
+
 func evalIdentifier(node *ast.IdentifierExpr, env *object.Environment) object.Object {
+	return lookupVariable(node.Value, node, env)
+}
+
+func lookupVariable(name string, node ast.Expression, env *object.Environment) object.Object {
 	if depth, ok := Locals[node]; ok {
-		if val, ok := env.GetAt(depth, node.Value); ok {
+		if val, ok := env.GetAt(depth, name); ok {
 			return val
 		}
 	}
 
-	if builtin, ok := builtins[node.Value]; ok {
+	if builtin, ok := builtins[name]; ok {
 		return builtin
 	}
 
-	return identifierNotFoundError(node.Value)
+	return identifierNotFoundError(name)
 }
 
-func evalFunctionExpr(node *ast.FunctionExpr, env *object.Environment) *object.Function {
+func evalFunctionExpr(node *ast.FunctionExpr, env *object.Environment, isInit bool) *object.Function {
 	return &object.Function{
 		Parameters: node.Parameters,
 		Body:       node.Body,
 		Env:        env,
+		IsInit:     isInit,
 	}
 }
 
@@ -274,12 +421,57 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 
 		extendedEnv := extendFunctionEnv(fn, args)
 		result := evalBlockStatement(fn.Body.Statements, extendedEnv)
+
 		if returnValue, ok := result.(*object.ReturnValue); ok {
+			if fn.IsInit {
+				this, ok := fn.Env.GetAt(0, token.THIS_KEYWORD)
+				if ok {
+					return this
+				}
+				return &object.Error{
+					Message: "OOOPS, NO THIS FOR THIS.",
+				}
+			}
 			return returnValue.Value
 		}
+
+		if fn.IsInit {
+			this, ok := fn.Env.GetAt(0, token.THIS_KEYWORD)
+			if ok {
+				return this
+			}
+			return &object.Error{
+				Message: "OOOPS, NO THIS FOR THIS.",
+			}
+		}
+
 		return result
+
 	case *object.Builtin:
 		return fn.Fn(args...)
+
+	case *object.Class:
+		init := fn.FindMethod(token.INITIALIZER_KEYWORD)
+
+		expectArgs := 0
+		if init != nil {
+			expectArgs = len(init.Parameters)
+		}
+
+		if len(args) != expectArgs {
+			return wrongArgumentsCountError(expectArgs, len(args))
+		}
+
+		inst := &object.Instance{
+			Class:  fn,
+			Fields: make(map[string]object.Object),
+		}
+
+		if init != nil {
+			applyFunction(init.Bind(inst), args)
+		}
+
+		return inst
 	}
 	return notAFunctionError(string(fn.Type()), fn.Inspect())
 }

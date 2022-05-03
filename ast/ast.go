@@ -119,6 +119,42 @@ func (b *BlockStmt) String() string {
 	return out.String()
 }
 
+type ClassStmt struct {
+	Token      token.Token // class
+	Name       *IdentifierExpr
+	Superclass *IdentifierExpr
+	Methods    []*LetStmt
+}
+
+func (c *ClassStmt) statementNode()       {}
+func (c *ClassStmt) TokenLiteral() string { return c.Token.Literal }
+func (c *ClassStmt) String() string {
+	var out bytes.Buffer
+
+	out.WriteString(c.TokenLiteral())
+	out.WriteString(" ")
+	out.WriteString(c.Name.String())
+	if c.Superclass != nil {
+		out.WriteString(" < ")
+		out.WriteString(c.Superclass.String())
+	}
+	out.WriteString(" {")
+
+	if len(c.Methods) != 0 {
+		out.WriteString("\n")
+	}
+
+	for _, p := range c.Methods {
+		out.WriteString("\t")
+		out.WriteString(p.String())
+		out.WriteString("\n")
+	}
+
+	out.WriteString("}")
+
+	return out.String()
+}
+
 // Expressions
 
 type IdentifierExpr struct {
@@ -288,4 +324,66 @@ func (c *CallExpr) String() string {
 
 	out.WriteString(")")
 	return out.String()
+}
+
+type GetExpr struct {
+	Token      token.Token // '.'
+	Expression Expression
+	Field      *IdentifierExpr
+}
+
+func (g *GetExpr) expressionNode()      {}
+func (g *GetExpr) TokenLiteral() string { return g.Token.Literal }
+func (g *GetExpr) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(g.Expression.String())
+	out.WriteString(g.TokenLiteral())
+	out.WriteString(g.Field.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+
+type SetExpr struct {
+	Token      token.Token // '.'
+	Expression Expression
+	Field      *IdentifierExpr
+	Value      Expression
+}
+
+func (g *SetExpr) expressionNode()      {}
+func (g *SetExpr) TokenLiteral() string { return g.Token.Literal }
+func (g *SetExpr) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("(")
+	out.WriteString(g.Expression.String())
+	out.WriteString(".")
+	out.WriteString(g.Field.String())
+	out.WriteString(" = ")
+	out.WriteString(g.Value.String())
+	out.WriteString(")")
+
+	return out.String()
+}
+
+type ThisExpr struct {
+	Token token.Token
+}
+
+func (t *ThisExpr) expressionNode()      {}
+func (t *ThisExpr) TokenLiteral() string { return t.Token.Literal }
+func (t *ThisExpr) String() string       { return t.TokenLiteral() }
+
+type SuperExpr struct {
+	Token  token.Token
+	Method *IdentifierExpr
+}
+
+func (s *SuperExpr) expressionNode()      {}
+func (s *SuperExpr) TokenLiteral() string { return s.Token.Literal }
+func (s *SuperExpr) String() string {
+	return s.TokenLiteral() + "." + s.Method.String()
 }

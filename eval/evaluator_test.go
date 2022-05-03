@@ -14,6 +14,16 @@ type expectFn struct {
 	body   string
 }
 
+type expectClass struct {
+	name  string
+	super string
+	props []string
+}
+
+type expectInstance struct {
+	class string
+}
+
 func TestEval(t *testing.T) {
 	tt := []struct {
 		source string
@@ -60,6 +70,7 @@ func TestEval(t *testing.T) {
 		{source: "if (1 > 2) 10;", want: nil},
 		{source: "if (2 > 1) 10;", want: int64(10)},
 		{source: "return 10;", want: int64(10)},
+		{source: "10; return;", want: nil},
 		{source: "return true; 10;", want: true},
 		{source: "if (1 > 2) 10;", want: nil},
 		{source: "10; return 2 == 3; 20;", want: false},
@@ -93,6 +104,151 @@ func TestEval(t *testing.T) {
 		{source: "let x = 10; { let f = fn() { x }; let x = 20; f(); }", want: int64(10)},
 		{source: "let x = 10; { let f = fn() { x }; let x = 20; f(); } x;", want: int64(10)},
 		{source: "let x = 10; { fn f() { x }; let x = 20; f(); } x;", want: int64(10)},
+		// classes
+		{source: "class A {}", want: &expectClass{name: "A", super: "", props: []string{}}},
+
+		{source: "class B {} class A < B {}", want: &expectClass{name: "A", super: "B", props: []string{}}},
+		{source: "class A {} A();", want: &expectInstance{class: "A"}},
+		{source: `class A {} A().field = 10;`, want: int64(10)},
+		{source: "class A {} let obj = A(); obj.field = 10; obj.field;", want: int64(10)},
+		{source: "class A { let method = fn() { 10; }; } let obj = A(); obj.method()", want: int64(10)},
+		{source: "class A { fn method() { 10; }} let obj = A(); obj.method()", want: int64(10)},
+		{source: "class A { fn method() { this.x; }} let obj = A(); obj.x = 1; obj.method()", want: int64(1)},
+		{
+			source: `class A {
+						fn init() { this.x = 20; }
+						fn method() { this.x; }
+					}
+					let obj = A(); obj.method()`,
+			want: int64(20),
+		},
+		{
+			source: `class A {
+						fn init() { this.x = 20; }
+						fn method() { this.x; }
+					}
+					let obj = A(); obj.x = 50; obj.init()`,
+			want: &expectInstance{class: "A"},
+		},
+		{
+			source: `class A {
+						fn init() { this.x = 20; }
+						fn method() { this.x; }
+					}
+					let obj = A(); obj.x = 50; obj.init(); obj.x`,
+			want: int64(20),
+		},
+		{
+			source: `class A {
+						fn init() { this.x = 20; }
+						fn method() { this.x; }
+					}
+					class B < A{}
+					let obj = B();`,
+			want: &expectInstance{class: "B"},
+		},
+		{
+			source: `class A {
+						fn init() { this.x = 20; }
+						fn method() { this.x; }
+					}
+					class B < A{}
+					let obj = B(); obj.x;`,
+			want: int64(20),
+		},
+		{
+			source: `class A {
+						fn init() { this.x = 20; }
+						fn method() { this.x; }
+					}
+					class B < A {
+						fn init() { super.init() }
+					}
+					let obj = B(); obj.x;`,
+			want: int64(20),
+		},
+		{
+			source: `class A {
+						fn init() { this.x = 20; }
+						fn method() { this.x * 2; }
+					}
+					class B < A {
+						fn init() { super.init() }
+						fn method() { this.X }
+						fn doubleX() { super.method() }
+					}
+					class C < B {}
+					let obj = C(); obj.doubleX();`,
+			want: int64(40),
+		},
+		{
+			source: `class A {
+						fn init() { this.x = 20; }
+						fn method() { this.x * 2; }
+					}
+					class B < A {
+						fn init() { super.init() }
+						fn method() { this.X }
+						fn doubleX() { super.method }
+					}
+					class C < B {}
+					let obj = C(); let d = obj.doubleX(); obj.x = 10; d()`,
+			want: int64(20),
+		},
+		{
+			source: `class A {
+						fn init() { this.x = 20; }
+						fn method() { this.x; }
+					}
+					class B < A {}
+					let obj = B(); obj.x = 50; obj.init(); obj.method()`,
+			want: int64(20),
+		},
+		{
+			source: `class A {
+						fn init() { this.x = 20; }
+						fn method() { this.x; }
+					}
+					class B {
+						fn init() {this.x = 10; }
+					}
+					let a = A(); let b = B(); b.method = a.method; b.method();`,
+			want: int64(20),
+		},
+		{
+			source: `class A {
+						fn init(n) { this.x = n; }
+						fn method() { this.x; }
+					}
+					class B < A{}
+					let obj = B(10); obj.x`,
+			want: int64(10),
+		},
+		{
+			source: `class A {
+						fn init(n) { this.x = n; }
+						fn method() {
+							class B < A {}
+							B(20);
+						}
+					}
+					let obj = A(10).method(); obj.x`,
+			want: int64(20),
+		},
+		{
+			source: `class A {
+						fn init(n) { this.x = n; }
+						fn new(x) {
+							A(x);
+						}
+					}
+					let obj = A(10).new(20); obj.x`,
+			want: int64(20),
+		},
+		{
+			source: "let x = 1; class B {} { class A < B { fn f() { x = 20; } } A().f() } x",
+			want:   int64(20),
+		},
 	}
 
 	for _, tc := range tt {
@@ -128,12 +284,41 @@ func TestRuntimeErrorHandling(t *testing.T) {
 		{source: "if (10 > 0) { return true + false; }; 6;", want: "unknown operator: BOOLEAN + BOOLEAN"},
 		{source: "(true - false) * 1", want: "unknown operator: BOOLEAN - BOOLEAN"},
 		{source: "x;", want: "identifier not found: 'x'"},
-		{source: "let a = 10; y;", want: "identifier not found: 'y'"},
+		{source: "let a = 10; return y;", want: "identifier not found: 'y'"},
 		{source: "let a = 10; b = 20;", want: "identifier not found: 'b'"},
 		{source: "let a = 10; a = b;", want: "identifier not found: 'b'"},
 		{source: "let function = 1; function(false)", want: "not a function: INTEGER '1'"},
 		{source: "let x = 10; { let f = x; } f;", want: "identifier not found: 'f'"},
 		{source: `len("Hello, World!"); { let len = 10; len; len("Hello, World!")}`, want: "not a function: INTEGER '10'"},
+		{source: `class A {} A(1, "b");`, want: "wrong arguments count: expect 0, got 2"},
+		{source: `class A {} A.field;`, want: "only instances have properties: CLASS.field"},
+		{source: `class A {} A.field = 10;`, want: "only instances have fields: CLASS.field"},
+		{source: `class A {} A().field;`, want: "undefined property: 'field'"},
+		{source: "class A { fn method() { this.x; }} let obj = A(); obj.method()", want: "undefined property: 'x'"},
+		{source: `"hi".field;`, want: "only instances have properties: STRING.field"},
+		{source: `"hi".field = 10;`, want: "only instances have fields: STRING.field"},
+		{source: "class A < B {}", want: "identifier not found: 'B'"},
+		{source: "let B = 10; class A < B {}", want: "superclass must be a class: 'A < INTEGER'"},
+		{
+			source: `class A {
+						fn init() { this.x = 20; }
+						fn method() { this.x; }
+					}
+					class B < A{
+						fn init() {}
+					}
+					let obj = B(); obj.x;`,
+			want: "undefined property: 'x'",
+		},
+		{
+			source: `class A {
+						fn init(n) { this.x = n; }
+						fn method() { this.x; }
+					}
+					class B < A{}
+					let obj = B(); obj.x`,
+			want: "wrong arguments count: expect 1, got 0",
+		},
 	}
 
 	for _, tc := range tt {
@@ -160,7 +345,7 @@ func testObject(t testing.TB, obj object.Object, want interface{}) {
 		}
 		w, ok := want.(int64)
 		if !ok {
-			t.Errorf("Can not compare %q value with %T .", obj.Type(), want)
+			t.Fatalf("Can not compare %q value with %T .", obj.Type(), want)
 		}
 
 		if w != o.Value {
@@ -173,7 +358,7 @@ func testObject(t testing.TB, obj object.Object, want interface{}) {
 		}
 		w, ok := want.(bool)
 		if !ok {
-			t.Errorf("Can not compare %q value with %T .", obj.Type(), want)
+			t.Fatalf("Can not compare %q value with %T .", obj.Type(), want)
 		}
 
 		if w != o.Value {
@@ -186,7 +371,7 @@ func testObject(t testing.TB, obj object.Object, want interface{}) {
 		}
 		w, ok := want.(string)
 		if !ok {
-			t.Errorf("Can not compare %q value with %T .", obj.Type(), want)
+			t.Fatalf("Can not compare %q value with %T .", obj.Type(), want)
 		}
 
 		if w != o.Value {
@@ -208,7 +393,7 @@ func testObject(t testing.TB, obj object.Object, want interface{}) {
 		}
 		w, ok := want.(*expectFn)
 		if !ok {
-			t.Errorf("Can not compare %q value with %T .", obj.Type(), want)
+			t.Fatalf("Can not compare %q value with %T .", obj.Type(), want)
 		}
 
 		if len(fn.Parameters) != len(w.params) {
@@ -224,6 +409,60 @@ func testObject(t testing.TB, obj object.Object, want interface{}) {
 		if fn.Body.String() != w.body {
 			t.Errorf("Wrong function body, got %q, want %q.", fn.Body.String(), w.body)
 		}
+	case object.CLASS_OBJ:
+		class, ok := obj.(*object.Class)
+		if !ok {
+			t.Errorf("Object is not an Class, got %T. (%+v)", obj, obj)
+		}
+		w, ok := want.(*expectClass)
+		if !ok {
+			t.Fatalf("Can not compare %q value with %T .", obj.Type(), want)
+		}
+
+		if class.Name.Value != w.name {
+			t.Errorf("Wrong class name, want %q, got %q.", w.name, class.Name.Value)
+		}
+
+		gotSuper := ""
+		if class.Super != nil {
+			gotSuper = class.Super.Name.Value
+		}
+		if gotSuper != w.super {
+			t.Errorf("Wrong superclass name, want %q, got %q.", w.super, gotSuper)
+		}
+
+		if len(class.Methods) != len(w.props) {
+			t.Errorf("Wrong properties number, got %d, want %d.", len(class.Methods), len(w.props))
+		}
+
+		methods := []string{}
+		for m := range class.Methods {
+			methods = append(methods, m)
+		}
+		for i, m := range methods {
+			if m != w.props[i] {
+				t.Errorf("Wrong property name, prop index=%d, got %q, want %q.", i, m, w.props[i])
+			}
+		}
+
+		// if class.Body.String() != w.body {
+		// 	t.Errorf("Wrong function body, got %q, want %q.", class.Body.String(), w.body)
+		// }
+	case object.INSTANCE_OBJ:
+		inst, ok := obj.(*object.Instance)
+		if !ok {
+			t.Errorf("Object is not an Instance, got %T. (%+v)", obj, obj)
+		}
+
+		w, ok := want.(*expectInstance)
+		if !ok {
+			t.Fatalf("Can not compare %q value with %T .", obj.Type(), want)
+		}
+
+		if inst.Class.Name.Value != w.class {
+			t.Errorf("Wrong instance class, want %q, got %q.", w.class, inst.Class.Name.Value)
+		}
+
 	case object.ERROR_OBJ:
 		t.Errorf("Got unexpected error object: %v.", obj)
 	default:
