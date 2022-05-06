@@ -59,7 +59,7 @@ func (r *REPL) Start() {
 		res.Resolve(program)
 
 		if len(res.Errors()) != 0 {
-			printParseErrors(r.out, p.Errors())
+			printParseErrors(r.out, res.Errors())
 		}
 
 		eval.Locals = res.Locals()
