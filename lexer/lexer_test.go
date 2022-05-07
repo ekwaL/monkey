@@ -9,6 +9,7 @@ import (
 const source = `
 let five = 5 ;
 let ten = 10;
+let ten_2 = 10;
 
 let add = fn(x, y) {
 	x + y;
@@ -61,6 +62,13 @@ func TestNextToken(t *testing.T) {
 		// let ten = 10;
 		{token.LET, "let"},
 		{token.IDENTIFIER, "ten"},
+		{token.ASSIGN, "="},
+		{token.INT, "10"},
+		{token.SEMICOLON, ";"},
+
+		// let ten2 = 10;
+		{token.LET, "let"},
+		{token.IDENTIFIER, "ten_2"},
 		{token.ASSIGN, "="},
 		{token.INT, "10"},
 		{token.SEMICOLON, ";"},
