@@ -17,6 +17,16 @@ func NewEnclosedEnvironment(outer *Environment) *Environment {
 	return env
 }
 
+// Get from the outermost env
+func (e *Environment) GetGlobal(name string) (Object, bool) {
+	env := e
+	for env.Outer != nil {
+		env = env.Outer
+	}
+	obj, ok := env.store[name]
+	return obj, ok
+}
+
 func (e *Environment) GetAt(depth int, name string) (Object, bool) {
 	obj, ok := e.ancestor(depth).store[name]
 	return obj, ok

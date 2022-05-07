@@ -116,6 +116,11 @@ func evalProgram(statements []ast.Statement, env *object.Environment) (result ob
 			return result
 		}
 	}
+
+	if result == nil {
+		result = NULL
+	}
+
 	return
 }
 
@@ -130,6 +135,11 @@ func evalBlockStatement(statements []ast.Statement, env *object.Environment) (re
 			}
 		}
 	}
+
+	if result == nil {
+		result = NULL
+	}
+
 	return
 }
 
@@ -372,6 +382,8 @@ func lookupVariable(name string, node ast.Expression, env *object.Environment) o
 		if val, ok := env.GetAt(depth, name); ok {
 			return val
 		}
+	} else if val, ok := env.GetGlobal(name); ok {
+		return val
 	}
 
 	if builtin, ok := builtins[name]; ok {
@@ -507,5 +519,5 @@ func isTruthy(obj object.Object) bool {
 }
 
 func isError(obj object.Object) bool {
-	return obj.Type() == object.ERROR_OBJ
+	return obj != nil && obj.Type() == object.ERROR_OBJ
 }
