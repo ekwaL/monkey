@@ -53,6 +53,7 @@ const (
 	ELSE     = "ELSE"
 	TRUE     = "TRUE"
 	FALSE    = "FALSE"
+	NULL     = "NULL"
 )
 
 const (
@@ -72,6 +73,7 @@ var keywords = map[string]TokenType{
 	"else":        ELSE,
 	"true":        TRUE,
 	"false":       FALSE,
+	"null":        NULL,
 }
 
 func LookupKeyword(identifier string) TokenType {

@@ -55,6 +55,8 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return boolToBooleanObject(node.Value)
 	case *ast.StringLiteralExpr:
 		return &object.String{Value: node.Value}
+	case *ast.NullExpr:
+		return NULL
 	case *ast.PrefixExpr:
 		right := Eval(node.Right, env)
 		if isError(right) {

@@ -21,9 +21,9 @@ const (
 )
 
 const (
-	ERR_READ_ON_OWN_INIT         = "Can not read variable '%s' in it's own initializer."
-	ERR_ALREADY_DECLARED         = "Variable '%s' is already declared in current scope."
-	ERR_CLASS_INHERIT_SELF       = "Class '%s' can not inherit from itself."
+	ERR_READ_ON_OWN_INIT   = "Can not read variable '%s' in it's own initializer."
+	ERR_ALREADY_DECLARED   = "Variable '%s' is already declared in current scope."
+	ERR_CLASS_INHERIT_SELF = "Class '%s' can not inherit from itself."
 	// ERR_TOP_LEVEL_RETURN         = "Can not return from top-level code."
 	ERR_INITIALIZER_VAL_RETURN   = "Can not return value from initializer."
 	ERR_THIS_OUTSIDE_OF_CLASS    = "Can not use 'this' outside of class."
@@ -176,6 +176,7 @@ func (r *resolver) Resolve(node ast.Node) {
 	case *ast.IntLiteralExpr:
 	case *ast.BoolLiteralExpr:
 	case *ast.StringLiteralExpr:
+	case *ast.NullExpr:
 	}
 }
 

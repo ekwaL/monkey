@@ -81,7 +81,11 @@ func TestReturnStatement(t *testing.T) {
 			t.Errorf("Wrong TokenLiteral, want 'return', got %q.", returnStmt.TokenLiteral())
 		}
 
-		testIdentifierOrLiteralExpr(t, returnStmt.Value, expectedValue)
+		if expectedValue != nil {
+			testIdentifierOrLiteralExpr(t, returnStmt.Value, expectedValue)
+		} else if returnStmt.Value != nil {
+			t.Errorf("Wrong Value, want nil, got %v.", returnStmt.Value)
+		}
 	}
 }
 
@@ -123,7 +127,7 @@ func TestIfExpression(t *testing.T) {
 	source := `
 		if (5 > 10) {
 			20;
-		} else true;`
+		} else null;`
 	program := parse(t, source)
 
 	if program == nil {
@@ -174,10 +178,10 @@ func TestIfExpression(t *testing.T) {
 	if !ok {
 		t.Fatalf("Else-branch is not *ast.ExpressionStmt. Got %T.", ifExpr.Else)
 	}
-	if elseBranch.TokenLiteral() != "true" {
-		t.Errorf("Wrong TokenLiteral, want 'true', got %q.", elseBranch.TokenLiteral())
+	if elseBranch.TokenLiteral() != "null" {
+		t.Errorf("Wrong TokenLiteral, want 'null', got %q.", elseBranch.TokenLiteral())
 	}
-	testIdentifierOrLiteralExpr(t, elseBranch.Expression, true)
+	testIdentifierOrLiteralExpr(t, elseBranch.Expression, nil)
 }
 
 func TestFunctionExpression(t *testing.T) {
@@ -786,6 +790,8 @@ func testIdentifierOrLiteralExpr(t testing.TB, expr ast.Expression, want interfa
 		default:
 			testStringLiteralExpression(t, expr, string(w))
 		}
+	case nil:
+		testNullLiteralExpression(t, expr)
 	}
 }
 
@@ -856,6 +862,18 @@ func testStringLiteralExpression(t testing.TB, expr ast.Expression, want string)
 
 	if stringLiteralExpr.TokenLiteral() != want {
 		t.Errorf("Wrong TokenLiteral(). Got %q, want %q.", stringLiteralExpr.TokenLiteral(), want)
+	}
+}
+
+func testNullLiteralExpression(t testing.TB, expr ast.Expression) {
+	t.Helper()
+
+	nullExpr, ok := expr.(*ast.NullExpr)
+	if !ok {
+		t.Errorf("Expression is not NullExpr, got %T.", expr)
+	}
+	if nullExpr.TokenLiteral() != "null" {
+		t.Errorf("Wrong TokenLiteral(). Got %q, want 'null'.", nullExpr.TokenLiteral())
 	}
 }
 

@@ -66,15 +66,14 @@ func TestAstString(t *testing.T) {
 			},
 			&ast.ExpressionStmt{
 				Token: token.Token{
-					Type:    token.INT,
-					Literal: "999",
+					Type:    token.NULL,
+					Literal: "null",
 				},
-				Expression: &ast.IntLiteralExpr{
+				Expression: &ast.NullExpr{
 					Token: token.Token{
-						Type:    token.INT,
-						Literal: "999",
+						Type:    token.NULL,
+						Literal: "null",
 					},
-					Value: 999,
 				},
 			},
 			&ast.ExpressionStmt{
@@ -453,7 +452,7 @@ func TestAstString(t *testing.T) {
 		`let num = 10;
 num = "hello";
 return 123;
-999;
+null;
 (!(false == true));
 if (!true) { 10; } else { false; };
 fn(x, y) { "string literal"; };

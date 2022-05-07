@@ -30,6 +30,8 @@ if (5 < 10) {
 	return false;
 }
 
+null;
+
 10 == 10;
 10 != 9;
 10 <= 11;
@@ -61,6 +63,7 @@ func TestNextToken(t *testing.T) {
 
 		// let ten = 10;
 		{token.LET, "let"},
+
 		{token.IDENTIFIER, "ten"},
 		{token.ASSIGN, "="},
 		{token.INT, "10"},
@@ -143,6 +146,10 @@ func TestNextToken(t *testing.T) {
 		{token.FALSE, "false"},
 		{token.SEMICOLON, ";"},
 		{token.RBRACE, "}"},
+
+		// null;
+		{token.NULL, "null"},
+		{token.SEMICOLON, ";"},
 
 		// 10 == 10;
 		{token.INT, "10"},

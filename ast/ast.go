@@ -166,6 +166,14 @@ func (i *IdentifierExpr) expressionNode()      {}
 func (i *IdentifierExpr) TokenLiteral() string { return i.Token.Literal }
 func (i *IdentifierExpr) String() string       { return i.Value }
 
+type NullExpr struct {
+	Token token.Token
+}
+
+func (n *NullExpr) expressionNode()      {}
+func (n *NullExpr) TokenLiteral() string { return n.Token.Literal }
+func (n *NullExpr) String() string       { return n.TokenLiteral() }
+
 type IntLiteralExpr struct {
 	Token token.Token
 	Value int64
