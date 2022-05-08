@@ -26,6 +26,9 @@ const (
 	SLASH  = "/"
 	BANG   = "!"
 
+	OR = "||"
+	AND = "&&"
+
 	LESS          = "<"
 	GREATER       = ">"
 	EQUAL_EQUAL   = "=="

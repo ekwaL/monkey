@@ -730,6 +730,11 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{"a.b().c()", "((a.b)().c)()"},
 		{"a.b.c = 10;", "((a.b).c = 10)"},
 		{"a.b().c = 10;", "((a.b)().c = 10)"},
+		{"a || b && c", "(a || (b && c))"},
+		{
+			"x - y || a * b + c || d && e * !f;",
+			"(((x - y) || ((a * b) + c)) || (d && (e * (!f))))",
+		},
 	}
 
 	for _, tc := range tt {

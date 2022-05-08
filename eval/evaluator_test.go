@@ -60,6 +60,14 @@ func TestEval(t *testing.T) {
 		{source: "null == false;", want: false},
 		{source: "null == true;", want: false},
 		{source: "null == true;", want: false},
+		{source: "false || true;", want: true},
+		{source: "true && false;", want: false},
+		{source: "10 || 20;", want: int64(10)},
+		{source: "null || 10", want: int64(10)},
+		{source: "10 && 20;", want: int64(20)},
+		{source: "let x; x = x || 20", want: int64(20)},
+		{source: "let x; false || (x = 20); x", want: int64(20)},
+		{source: "null && 10", want: nil},
 		{source: "5 == 5;", want: true},
 		{source: "5 != 5;", want: false},
 		{source: `"string" + " " + "concatenation"`, want: "string concatenation"},
@@ -115,7 +123,6 @@ func TestEval(t *testing.T) {
 		{source: "let x = 10; { fn f() { x }; let x = 20; f(); } x;", want: int64(10)},
 		// classes
 		{source: "class A {}", want: &expectClass{name: "A", super: "", props: []string{}}},
-
 		{source: "class B {} class A < B {}", want: &expectClass{name: "A", super: "B", props: []string{}}},
 		{source: "class A {} A();", want: &expectInstance{class: "A"}},
 		{source: `class A {} A().field = 10;`, want: int64(10)},

@@ -64,6 +64,10 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 		return evalPrefixExpr(node.Operator, right)
 	case *ast.InfixExpr:
+		if node.Token.Type == token.OR || node.Token.Type == token.AND {
+			return evalLogicalExpr(node.Left, node.Operator, node.Right, env)
+		}
+
 		left := Eval(node.Left, env)
 		// TODO: definitely need a more elegant way to handle errors
 		if isError(left) {
@@ -264,6 +268,32 @@ func evalMinusOperatorExpr(right object.Object) object.Object {
 
 	val := right.(*object.Integer).Value
 	return &object.Integer{Value: -val}
+}
+
+func evalLogicalExpr(
+	leftExpr ast.Expression,
+	operator string,
+	rightExpr ast.Expression,
+	env *object.Environment,
+) object.Object {
+	left := Eval(leftExpr, env)
+
+	if isError(left) {
+		return left
+	}
+
+	if operator == token.AND {
+		if !isTruthy(left) {
+			return left
+		}
+	} else { // operator == token.OR
+		if isTruthy(left) {
+			return left
+		}
+	}
+
+	right := Eval(rightExpr, env)
+	return right
 }
 
 func evalInfixExpr(left object.Object, operator string, right object.Object) object.Object {

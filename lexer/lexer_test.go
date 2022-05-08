@@ -36,6 +36,8 @@ null;
 10 != 9;
 10 <= 11;
 11 >= 10;
+11 && 10; &;
+11 || 10; |;
 
 "string indeed";
 let x = "str";
@@ -173,6 +175,22 @@ func TestNextToken(t *testing.T) {
 		{token.INT, "11"},
 		{token.GREATER_EQUAL, ">="},
 		{token.INT, "10"},
+		{token.SEMICOLON, ";"},
+
+		// 11 && 10; &;
+		{token.INT, "11"},
+		{token.AND, "&&"},
+		{token.INT, "10"},
+		{token.SEMICOLON, ";"},
+		{token.ILLEGAL, "&"},
+		{token.SEMICOLON, ";"},
+
+		// 11 || 10; |;
+		{token.INT, "11"},
+		{token.OR, "||"},
+		{token.INT, "10"},
+		{token.SEMICOLON, ";"},
+		{token.ILLEGAL, "|"},
 		{token.SEMICOLON, ";"},
 
 		// "string indeed";
