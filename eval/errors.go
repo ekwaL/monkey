@@ -2,7 +2,6 @@ package eval
 
 import (
 	"fmt"
-	"monkey/ast"
 	"monkey/object"
 )
 
@@ -105,8 +104,8 @@ func superclassMustBeClassError(class string, super object.ObjectType) *object.E
 	}
 }
 
-func internalResolveSuperError(super *ast.SuperExpr) *object.Error {
+func internalResolveError(keyword string) *object.Error {
 	return &object.Error{
-		Message: fmt.Sprintf(ERR_INTERNAL+"looks like expression '%s' is not resolved correctly", super.String()),
+		Message: fmt.Sprintf(ERR_INTERNAL+"looks like expression '%s' is not resolved correctly", keyword),
 	}
 }

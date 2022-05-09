@@ -372,27 +372,27 @@ func evalIfExpr(expr *ast.IfExpr, env *object.Environment) object.Object {
 func evalSuperExpr(node *ast.SuperExpr, env *object.Environment) object.Object {
 	depth, ok := Locals[node]
 	if !ok {
-		return internalResolveSuperError(node)
+		return internalResolveError(node.String())
 	}
 
 	super, ok := env.GetAt(depth, token.SUPER_KEYWORD)
 	if !ok {
-		return internalResolveSuperError(node)
+		return internalResolveError(node.String())
 	}
 
 	superClass, ok := super.(*object.Class)
 	if !ok {
-		return internalResolveSuperError(node)
+		return internalResolveError(node.String())
 	}
 
 	inst, ok := env.GetAt(depth-1, token.THIS_KEYWORD)
 	if !ok {
-		return internalResolveSuperError(node)
+		return internalResolveError(node.String())
 	}
 
 	instObj, ok := inst.(*object.Instance)
 	if !ok {
-		return internalResolveSuperError(node)
+		return internalResolveError(node.String())
 	}
 
 	fn := superClass.FindMethod(node.Method.Value)
@@ -472,9 +472,7 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 				if ok {
 					return this
 				}
-				return &object.Error{
-					Message: "OOOPS, NO THIS FOR THIS.",
-				}
+				return internalResolveError(token.THIS_KEYWORD)
 			}
 			return returnValue.Value
 		}
@@ -484,9 +482,7 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 			if ok {
 				return this
 			}
-			return &object.Error{
-				Message: "OOOPS, NO THIS FOR THIS.",
-			}
+			return internalResolveError(token.THIS_KEYWORD)
 		}
 
 		return result
@@ -517,6 +513,7 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 
 		return inst
 	}
+
 	return notAFunctionError(string(fn.Type()), fn.Inspect())
 }
 
