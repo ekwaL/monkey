@@ -39,7 +39,10 @@ var precedences = map[token.TokenType]int{
 	token.DOT:         GET,
 }
 
-const ERR_NO_PREFIX_PARSLET_FOUND = "No prefix parslet found for %q."
+const (
+	ERR_NO_PREFIX_PARSLET_FOUND = "No prefix parslet found for %q."
+	ERR_ILLEGAL_TOKEN           = "Illegal token: '%s'."
+)
 
 type (
 	prefixParslet func() ast.Expression
@@ -204,7 +207,12 @@ func (p *Parser) synchronize() {
 }
 
 func (p *Parser) noPrefixParsletError(tt token.TokenType) {
-	msg := fmt.Sprintf(ERR_NO_PREFIX_PARSLET_FOUND, tt)
+	var msg string
+	if tt == token.ILLEGAL {
+		msg = fmt.Sprintf(ERR_ILLEGAL_TOKEN, p.currToken.Literal)
+	} else {
+		msg = fmt.Sprintf(ERR_NO_PREFIX_PARSLET_FOUND, tt)
+	}
 	p.error(msg)
 }
 
