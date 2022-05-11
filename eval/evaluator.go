@@ -397,7 +397,7 @@ func evalSuperExpr(node *ast.SuperExpr, env *object.Environment) object.Object {
 
 	fn := superClass.FindMethod(node.Method.Value)
 	if fn == nil {
-		undefinedPropertyError(node.Method.Value)
+		return undefinedPropertyError(node.Method.Value)
 	}
 
 	return fn.Bind(instObj)
