@@ -265,6 +265,20 @@ func TestEval(t *testing.T) {
 			source: "let x = 1; class B {} { class A < B { fn f() { x = 20; } } A().f() } x",
 			want:   int64(20),
 		},
+		// arrays
+		{source: "[1, 2, 3];", want: []interface{}{int64(1), int64(2), int64(3)}},
+		{source: "[1, 2, 3][1];", want: int64(2)},
+		{source: "[1, 2, 3][2];", want: int64(3)},
+		{source: "[1, 2, 3][-1];", want: int64(3)},
+		{source: "[1, 2, 3][-2];", want: int64(2)},
+		{source: "[1, 2, 3][-3];", want: int64(1)},
+		{source: "let i = 0; [1, 2, 3][i];", want: int64(1)},
+		{source: "[1, 2, 3][1 + 1];", want: int64(3)},
+		{source: "let arr = [1, 2, 3]; arr[1];", want: int64(2)},
+		{source: "let arr = [1, 2, 3]; arr[0] + arr[1] + arr[2];", want: int64(6)},
+		{source: "let arr = [1, 2, 3]; let i = arr[0]; arr[i]", want: int64(2)},
+		{source: "let arr = [1, 2, 3]; let i = arr[0]; arr[-i]", want: int64(3)},
+		{source: "len([1, 2, 3]);", want: int64(3)},
 	}
 
 	for _, tc := range tt {
@@ -344,6 +358,11 @@ func TestRuntimeErrorHandling(t *testing.T) {
 					let obj = B(); obj.x`,
 			want: "wrong arguments count: expect 1, got 0",
 		},
+		{source: "[1, 2, 3][3]", want: "out of bounds: ARRAY[3]"},
+		{source: "[1, 2, 3][-4]", want: "out of bounds: ARRAY[-4]"},
+		{source: `"hello"[-4]`, want: "unknown operator: STRING[INTEGER]"},
+		{source: `["hello", "world"]["first"]`, want: "unknown operator: ARRAY[STRING]"},
+		{source: `(fn (){})[0]`, want: "unknown operator: FUNCTION[INTEGER]"},
 	}
 
 	for _, tc := range tt {
@@ -401,6 +420,23 @@ func testObject(t testing.TB, obj object.Object, want interface{}) {
 
 		if w != o.Value {
 			t.Errorf("Wrong object value. Got %v, want %v.", o.Value, w)
+		}
+	case object.ARRAY_OBJ:
+		a, ok := obj.(*object.Array)
+		if !ok {
+			t.Errorf("Object is not an Array, got %T. (%+v)", obj, obj)
+		}
+		w, ok := want.([]interface{})
+		if !ok {
+			t.Fatalf("Can not compare %q value with %T .", obj.Type(), want)
+		}
+
+		if len(w) != len(a.Elements) {
+			t.Fatalf("Wrong array value, got %s, want %v", a.Inspect(), w)
+		}
+
+		for i, el := range a.Elements {
+			testObject(t, el, w[i])
 		}
 	case object.NULL_OBJ:
 		_, ok := obj.(*object.Null)

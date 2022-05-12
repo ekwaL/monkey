@@ -26,7 +26,7 @@ const (
 	SLASH  = "/"
 	BANG   = "!"
 
-	OR = "||"
+	OR  = "||"
 	AND = "&&"
 
 	LESS          = "<"
@@ -40,10 +40,12 @@ const (
 	COMMA     = ","
 	SEMICOLON = ";"
 
-	LPAREN = "("
-	RPAREN = ")"
-	LBRACE = "{"
-	RBRACE = "}"
+	LPAREN   = "("
+	RPAREN   = ")"
+	LBRACE   = "{"
+	RBRACE   = "}"
+	LBRACKET = "["
+	RBRACKET = "]"
 
 	// Keywords
 	CLASS    = "CLASS"

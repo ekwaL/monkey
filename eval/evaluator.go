@@ -55,6 +55,16 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return boolToBooleanObject(node.Value)
 	case *ast.StringLiteralExpr:
 		return &object.String{Value: node.Value}
+	case *ast.ArrayLiteralExpr:
+		arr := &object.Array{}
+		for _, el := range node.Elements {
+			val := Eval(el, env)
+			if isError(val) {
+				return val
+			}
+			arr.Elements = append(arr.Elements, val)
+		}
+		return arr
 	case *ast.NullExpr:
 		return NULL
 	case *ast.PrefixExpr:
@@ -79,6 +89,31 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		}
 
 		return evalInfixExpr(left, node.Operator, right)
+	case *ast.IndexExpr:
+		left := Eval(node.Left, env)
+		if isError(left) {
+			return left
+		}
+
+		idx := Eval(node.Index, env)
+		if isError(idx) {
+			return idx
+		}
+
+		if left.Type() != object.ARRAY_OBJ || idx.Type() != object.INTEGER_OBJ {
+			return indexOperatorError(left.Type(), idx.Type())
+		}
+
+		arr := left.(*object.Array)
+		l := int64(len(arr.Elements))
+		i := idx.(*object.Integer).Value
+		if i >= 0 && i < l {
+			return arr.Elements[i]
+		} else if i < 0 && l + i >= 0 {
+			return arr.Elements[l + i]
+		} else {
+			return outOfBoundsError(left.Type(), i)
+		}
 	case *ast.GetExpr:
 		return evalGetExpr(node, env)
 	case *ast.SetExpr:

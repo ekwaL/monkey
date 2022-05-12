@@ -173,6 +173,13 @@ func (r *resolver) Resolve(node ast.Node) {
 		for _, a := range node.Arguments {
 			r.Resolve(a)
 		}
+	case *ast.IndexExpr:
+		r.Resolve(node.Left)
+		r.Resolve(node.Index)
+	case *ast.ArrayLiteralExpr:
+		for _, el := range node.Elements {
+			r.Resolve(el)
+		}
 	case *ast.IntLiteralExpr:
 	case *ast.BoolLiteralExpr:
 	case *ast.StringLiteralExpr:

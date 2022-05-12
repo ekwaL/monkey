@@ -16,6 +16,7 @@ const (
 	ERR_UNDEFINED_PROP        = "undefined property: "
 	ERR_SUPERCLASS_NOT_CLASS  = "superclass must be a class: "
 	ERR_INTERNAL              = "internal error: "
+	ERR_OUT_OF_BOUNDS          = "out of bounds: "
 )
 
 func unknownPrefixOperatorError(operator string, right object.ObjectType) *object.Error {
@@ -30,6 +31,12 @@ func unknownInfixOperatorError(
 	right object.ObjectType) *object.Error {
 	return &object.Error{
 		Message: fmt.Sprintf(ERR_UNKNOWN_OPERATOR+"%s %s %s", left, operator, right),
+	}
+}
+
+func indexOperatorError(left object.ObjectType, right object.ObjectType) *object.Error {
+	return &object.Error{
+		Message: fmt.Sprintf(ERR_UNKNOWN_OPERATOR+"%s[%s]", left, right),
 	}
 }
 
@@ -101,6 +108,12 @@ func undefinedPropertyError(prop string) *object.Error {
 func superclassMustBeClassError(class string, super object.ObjectType) *object.Error {
 	return &object.Error{
 		Message: fmt.Sprintf(ERR_SUPERCLASS_NOT_CLASS+"'%s < %s'", class, super),
+	}
+}
+
+func outOfBoundsError(left object.ObjectType, idx int64) *object.Error {
+	return &object.Error{
+		Message: fmt.Sprintf(ERR_OUT_OF_BOUNDS+"%s[%d]", left, idx),
 	}
 }
 

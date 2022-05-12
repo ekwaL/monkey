@@ -20,7 +20,8 @@ const (
 	PRODUCT     // *
 	PREFIX      // -X || !x
 	CALL        // function()
-	GET         // obj.field
+	GET         // obj.field || arr[]
+	//  isn't call/get/index expressions should have the same precedence
 )
 
 var precedences = map[token.TokenType]int{
@@ -37,6 +38,7 @@ var precedences = map[token.TokenType]int{
 	token.STAR:        PRODUCT,
 	token.LPAREN:      CALL,
 	token.DOT:         GET,
+	token.LBRACKET:    GET,
 }
 
 const (
@@ -85,6 +87,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.FUNCTION, p.parseFunctionExpr)
 	p.registerPrefix(token.THIS, p.parseThisExpr)
 	p.registerPrefix(token.SUPER, p.parseSuperExpr)
+	p.registerPrefix(token.LBRACKET, p.parseArrayLiteralExpr)
 
 	p.infixParslets = make(map[token.TokenType]infixParslet)
 	p.registerInfix(token.PLUS, p.parseInfixExpr)
@@ -100,6 +103,8 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.LPAREN, p.parseCallExpr)
 	p.registerInfix(token.ASSIGN, p.parseAssignExpr)
 	p.registerInfix(token.DOT, p.parseGetExpr)
+	p.registerInfix(token.LBRACKET, p.parseIndexExpr)
+
 	return &p
 }
 

@@ -39,9 +39,13 @@ func TestParserError(t *testing.T) {
 		class X < Y {
 			if (a > b) true;
 		}
+		[];
+		[)];
+		[,];
 		class X < Y {
 		fn x(x) { !true;
 		fn (x) { !true;
+		[1,)
 		`
 
 	l := lexer.New(source)
@@ -74,6 +78,10 @@ func TestParserError(t *testing.T) {
 		parser.ERR_CLASS_NO_SUPER_NAME,
 		parser.ERR_CLASS_BODY_START_LBRACE,
 		parser.ERR_CLASS_WRONG_DEFINITION,
+		fmt.Sprintf(parser.ERR_NO_PREFIX_PARSLET_FOUND, ")"),
+		fmt.Sprintf(parser.ERR_NO_PREFIX_PARSLET_FOUND, ","),
+		fmt.Sprintf(parser.ERR_NO_PREFIX_PARSLET_FOUND, ")"),
+		parser.ERR_ARR_LITERAL_END_BRACKET,
 		parser.ERR_FN_BODY_END_RBRACE,
 		parser.ERR_FN_BODY_END_RBRACE,
 		parser.ERR_CLASS_WRONG_DEFINITION,

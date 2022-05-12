@@ -201,6 +201,31 @@ func (s *StringLiteralExpr) expressionNode()      {}
 func (s *StringLiteralExpr) TokenLiteral() string { return s.Token.Literal }
 func (s *StringLiteralExpr) String() string       { return `"` + s.TokenLiteral() + `"` }
 
+type ArrayLiteralExpr struct {
+	Token    token.Token
+	Elements []Expression
+}
+
+func (a *ArrayLiteralExpr) expressionNode()      {}
+func (a *ArrayLiteralExpr) TokenLiteral() string { return a.Token.Literal }
+func (a *ArrayLiteralExpr) String() string {
+	var out bytes.Buffer
+
+	out.WriteString("[")
+
+	last := len(a.Elements) - 1
+	for i, n := range a.Elements {
+		out.WriteString(n.String())
+		if i != last {
+			out.WriteString(", ")
+		}
+	}
+
+	out.WriteString("]")
+
+	return out.String()
+}
+
 type PrefixExpr struct {
 	Token    token.Token // prefix token
 	Operator string
@@ -332,6 +357,18 @@ func (c *CallExpr) String() string {
 
 	out.WriteString(")")
 	return out.String()
+}
+
+type IndexExpr struct {
+	Token token.Token // '['
+	Left  Expression
+	Index Expression
+}
+
+func (i *IndexExpr) expressionNode()      {}
+func (i *IndexExpr) TokenLiteral() string { return i.Token.Literal }
+func (i *IndexExpr) String() string {
+	return "(" + i.Left.String() + "[" + i.Index.String() + "])"
 }
 
 type GetExpr struct {

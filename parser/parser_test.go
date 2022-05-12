@@ -599,6 +599,91 @@ func TestStringLiteral(t *testing.T) {
 	testIdentifierOrLiteralExpr(t, expressionStmt.Expression, want)
 }
 
+func TestArrayLiteral(t *testing.T) {
+	source := `[1, "two", x, 2 * 3, fn () {}];`
+
+	program := parse(t, source)
+
+	wantLen := 1
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	expressionStmt, ok := stmt.(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+	}
+	wantLiteral := "["
+	if expressionStmt.TokenLiteral() != wantLiteral {
+		t.Errorf("Wrong TokenLiteral, want %q, got %q.", wantLiteral, expressionStmt.TokenLiteral())
+	}
+
+	arrExpr, ok := expressionStmt.Expression.(*ast.ArrayLiteralExpr)
+	if !ok {
+		t.Fatalf("Expression is not *ast.ArrayLiteralExpr. Got %T.", expressionStmt.Expression)
+	}
+	if arrExpr.TokenLiteral() != wantLiteral {
+		t.Errorf("Wrong TokenLiteral, want %q, got %q.", wantLiteral, arrExpr.TokenLiteral())
+	}
+
+	want := []interface{}{1, "two", "x"}
+	if len(arrExpr.Elements) != len(want)+2 {
+		t.Errorf("Wrong Elements length, got %d, want %d.", len(arrExpr.Elements), len(want)+1)
+	}
+	for i, w := range want {
+		testIdentifierOrLiteralExpr(t, arrExpr.Elements[i], w)
+	}
+	testInfixExpr(t, arrExpr.Elements[len(want)], 2, "*", 3)
+	fn := arrExpr.Elements[len(want)+1]
+	if _, ok := fn.(*ast.FunctionExpr); !ok {
+		t.Errorf("Expect last array Element to be a function expression, got %T.", fn)
+	}
+}
+
+func TestIndexExpression(t *testing.T) {
+	source := "arr[1 + 1];"
+
+	program := parse(t, source)
+
+	wantLen := 1
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	expressionStmt, ok := stmt.(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+	}
+	wantLiteral := "arr"
+	if expressionStmt.TokenLiteral() != wantLiteral {
+		t.Errorf("Wrong TokenLiteral, want %q, got %q.", wantLiteral, expressionStmt.TokenLiteral())
+	}
+
+	wantLiteral = "["
+	idxExpr, ok := expressionStmt.Expression.(*ast.IndexExpr)
+	if !ok {
+		t.Fatalf("Expression is not *ast.IndexExpr. Got %T.", expressionStmt.Expression)
+	}
+	if idxExpr.TokenLiteral() != wantLiteral {
+		t.Errorf("Wrong TokenLiteral, want %q, got %q.", wantLiteral, idxExpr.TokenLiteral())
+	}
+
+	testIdentifierOrLiteralExpr(t, idxExpr.Left, "arr")
+	testInfixExpr(t, idxExpr.Index, 1, "+", 1)
+}
+
 func TestParseingPrefixExpressions(t *testing.T) {
 	tt := []struct {
 		source   string
@@ -734,6 +819,11 @@ func TestOperatorPrecedenceParsing(t *testing.T) {
 		{
 			"x - y || a * b + c || d && e * !f;",
 			"(((x - y) || ((a * b) + c)) || (d && (e * (!f))))",
+		},
+		{"a * [1, 2, 3, 4][b * c] * d", "((a * ([1, 2, 3, 4][(b * c)])) * d)"},
+		{
+			"add(a * b[2], b[1], 2 * [1, 2][1])",
+			"add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
 		},
 	}
 

@@ -445,6 +445,60 @@ func TestAstString(t *testing.T) {
 					},
 				},
 			},
+			&ast.ExpressionStmt{
+				Token: token.Token{
+					Type:    token.LBRACKET,
+					Literal: "[",
+				},
+				Expression: &ast.ArrayLiteralExpr{
+					Token: token.Token{
+						Type:    token.LBRACKET,
+						Literal: "[",
+					},
+					Elements: []ast.Expression{
+						&ast.IdentifierExpr{
+							Token: token.Token{
+								Type:    token.IDENTIFIER,
+								Literal: "x",
+							},
+							Value: "x",
+						},
+						&ast.IntLiteralExpr{
+							Token: token.Token{
+								Type:    token.INT,
+								Literal: "10",
+							},
+							Value: 10,
+						},
+					},
+				},
+			},
+			&ast.ExpressionStmt{
+				Token: token.Token{
+					Type:    token.IDENTIFIER,
+					Literal: "arr",
+				},
+				Expression: &ast.IndexExpr{
+					Token: token.Token{
+						Type:    token.LBRACKET,
+						Literal: "[",
+					},
+					Left: &ast.IdentifierExpr{
+						Token: token.Token{
+							Type:    token.IDENTIFIER,
+							Literal: "arr",
+						},
+						Value: "arr",
+					},
+					Index: &ast.IntLiteralExpr{
+						Token: token.Token{
+							Type:    token.INT,
+							Literal: "2",
+						},
+						Value: 2,
+					},
+				},
+			},
 		},
 	}
 
@@ -462,6 +516,8 @@ class Hello < World {
 }
 (obj.field);
 (obj.field = 10);
+[x, 10];
+(arr[2]);
 `
 	if program.String() != want {
 		t.Errorf("Wrong program.String() output. Want %q, got %q.", want, program.String())

@@ -46,6 +46,8 @@ class A {}
 instance.field;
 this;
 super;
+
+[1, 2];
 `
 
 func TestNextToken(t *testing.T) {
@@ -219,6 +221,13 @@ func TestNextToken(t *testing.T) {
 		{token.SEMICOLON, ";"},
 		// super;
 		{token.SUPER, "super"},
+		{token.SEMICOLON, ";"},
+		// [1, 2];
+		{token.LBRACKET, "["},
+		{token.INT, "1"},
+		{token.COMMA, ","},
+		{token.INT, "2"},
+		{token.RBRACKET, "]"},
 		{token.SEMICOLON, ";"},
 
 		{token.EOF, "\x00"},
