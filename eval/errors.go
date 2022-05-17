@@ -16,7 +16,8 @@ const (
 	ERR_UNDEFINED_PROP        = "undefined property: "
 	ERR_SUPERCLASS_NOT_CLASS  = "superclass must be a class: "
 	ERR_INTERNAL              = "internal error: "
-	ERR_OUT_OF_BOUNDS          = "out of bounds: "
+	ERR_OUT_OF_BOUNDS         = "out of bounds: "
+	ERR_NOT_HASHABLE_KEY      = "unusable as hash key: "
 )
 
 func unknownPrefixOperatorError(operator string, right object.ObjectType) *object.Error {
@@ -64,9 +65,7 @@ func builtinTypeMismatchError(
 			argsStr += ", " + string(arg.Type())
 		}
 	}
-	return &object.Error{
-		Message: ERR_TYPE_MISMATCH + name + "(" + argsStr + ")",
-	}
+	return &object.Error{Message: ERR_TYPE_MISMATCH + name + "(" + argsStr + ")"}
 }
 
 func identifierNotFoundError(identifier string) *object.Error {
@@ -100,9 +99,7 @@ func wrongSetTargetError(target object.ObjectType, prop string) *object.Error {
 }
 
 func undefinedPropertyError(prop string) *object.Error {
-	return &object.Error{
-		Message: fmt.Sprintf(ERR_UNDEFINED_PROP+"'%s'", prop),
-	}
+	return &object.Error{Message: fmt.Sprintf(ERR_UNDEFINED_PROP+"'%s'", prop)}
 }
 
 func superclassMustBeClassError(class string, super object.ObjectType) *object.Error {
@@ -112,9 +109,11 @@ func superclassMustBeClassError(class string, super object.ObjectType) *object.E
 }
 
 func outOfBoundsError(left object.ObjectType, idx int64) *object.Error {
-	return &object.Error{
-		Message: fmt.Sprintf(ERR_OUT_OF_BOUNDS+"%s[%d]", left, idx),
-	}
+	return &object.Error{Message: fmt.Sprintf(ERR_OUT_OF_BOUNDS+"%s[%d]", left, idx)}
+}
+
+func notHashableKeyError(key object.ObjectType) *object.Error {
+	return &object.Error{Message: fmt.Sprintf(ERR_NOT_HASHABLE_KEY+"%s", key)}
 }
 
 func internalResolveError(keyword string) *object.Error {

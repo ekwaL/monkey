@@ -634,7 +634,7 @@ func TestArrayLiteral(t *testing.T) {
 
 	want := []interface{}{1, "two", "x"}
 	if len(arrExpr.Elements) != len(want)+2 {
-		t.Errorf("Wrong Elements length, got %d, want %d.", len(arrExpr.Elements), len(want)+1)
+		t.Errorf("Wrong Elements length, got %d, want %d.", len(arrExpr.Elements), len(want)+2)
 	}
 	for i, w := range want {
 		testIdentifierOrLiteralExpr(t, arrExpr.Elements[i], w)
@@ -645,6 +645,114 @@ func TestArrayLiteral(t *testing.T) {
 		t.Errorf("Expect last array Element to be a function expression, got %T.", fn)
 	}
 }
+
+func TestHashLiteral(t *testing.T) {
+	source := `{| "one": 1, "two": 1 + 1, 3: "three" |};`
+
+	program := parse(t, source)
+
+	wantLen := 1
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	expressionStmt, ok := stmt.(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+	}
+	wantLiteral := "{|"
+	if expressionStmt.TokenLiteral() != wantLiteral {
+		t.Errorf("Wrong TokenLiteral, want %q, got %q.", wantLiteral, expressionStmt.TokenLiteral())
+	}
+
+	hashExpr, ok := expressionStmt.Expression.(*ast.HashLiteralExpr)
+	if !ok {
+		t.Fatalf("Expression is not *ast.HashLiteralExpr. Got %T.", expressionStmt.Expression)
+	}
+	if hashExpr.TokenLiteral() != wantLiteral {
+		t.Errorf("Wrong TokenLiteral, want %q, got %q.", wantLiteral, hashExpr.TokenLiteral())
+	}
+
+	want := map[interface{}]interface{}{
+		"one":    1,
+		"two":    []interface{}{1, "+", 1},
+		int64(3): "three",
+	}
+	if len(hashExpr.Pairs) != len(want) {
+		t.Errorf("Wrong Pairs length, got %d, want %d.", len(hashExpr.Pairs), len(want))
+	}
+	for key, val := range hashExpr.Pairs {
+		switch k := key.(type) {
+		case *ast.StringLiteralExpr:
+			wantVal, ok := want[k.Value]
+			if !ok {
+				t.Errorf("Wrong key, got %q.", k.Value)
+			}
+			if infix, ok := wantVal.([]interface{}); ok {
+				testInfixExpr(t, val, infix[0], infix[1].(string), infix[2])
+			} else {
+				testIdentifierOrLiteralExpr(t, val, wantVal)
+			}
+		case *ast.IntLiteralExpr:
+			wantVal, ok := want[k.Value]
+			if !ok {
+				t.Errorf("Wrong key, got %d.", k.Value)
+			}
+			if infix, ok := wantVal.([]interface{}); ok {
+				testInfixExpr(t, val, infix[0], infix[1].(string), infix[2])
+			} else {
+				testIdentifierOrLiteralExpr(t, val, wantVal)
+			}
+		default:
+			t.Errorf("Unknown key type: %T", key)
+		}
+	}
+}
+
+func TestEmptyHashLiteral(t *testing.T) {
+	source := "{||}"
+
+	program := parse(t, source)
+
+	wantLen := 1
+
+	if program == nil {
+		t.Fatal("ParseProgram() returned 'nil'.")
+	}
+
+	if len(program.Statements) != wantLen {
+		t.Fatalf("program.Statements len is %d, want %d .", len(program.Statements), wantLen)
+	}
+
+	stmt := program.Statements[0]
+	expressionStmt, ok := stmt.(*ast.ExpressionStmt)
+	if !ok {
+		t.Fatalf("stmt is not *ast.ExpressionStmt. Got %T.", stmt)
+	}
+	wantLiteral := "{|"
+	if expressionStmt.TokenLiteral() != wantLiteral {
+		t.Errorf("Wrong TokenLiteral, want %q, got %q.", wantLiteral, expressionStmt.TokenLiteral())
+	}
+
+	hashExpr, ok := expressionStmt.Expression.(*ast.HashLiteralExpr)
+	if !ok {
+		t.Fatalf("Expression is not *ast.HashLiteralExpr. Got %T.", expressionStmt.Expression)
+	}
+	if hashExpr.TokenLiteral() != wantLiteral {
+		t.Errorf("Wrong TokenLiteral, want %q, got %q.", wantLiteral, hashExpr.TokenLiteral())
+	}
+	if len(hashExpr.Pairs) != 0 {
+		t.Errorf("Wrong Pairs length, got %d, want %d.", len(hashExpr.Pairs), 0)
+	}
+
+}
+
 
 func TestIndexExpression(t *testing.T) {
 	source := "arr[1 + 1];"

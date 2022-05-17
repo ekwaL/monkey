@@ -70,10 +70,13 @@ func (l *Lexer) NextToken() token.Token {
 			tok = makeToken(token.ILLEGAL, l.ch)
 		}
 	case '|':
+		ch := l.ch
 		if l.peekChar() == '|' {
-			ch := l.ch
 			l.readChar()
 			tok = token.Token{Type: token.OR, Literal: string(ch) + string(l.ch)}
+		} else if l.peekChar() == '}' {
+			l.readChar()
+			tok = token.Token{Type: token.RHASHBRACE, Literal: string(ch) + string(l.ch)}
 		} else {
 			tok = makeToken(token.ILLEGAL, l.ch)
 		}
@@ -82,7 +85,13 @@ func (l *Lexer) NextToken() token.Token {
 	case ')':
 		tok = makeToken(token.RPAREN, l.ch)
 	case '{':
-		tok = makeToken(token.LBRACE, l.ch)
+		if l.peekChar() == '|' {
+			ch := l.ch
+			l.readChar()
+			tok = token.Token{Type: token.LHASHBRACE, Literal: string(ch) + string(l.ch)}
+		} else {
+			tok = makeToken(token.LBRACE, l.ch)
+		}
 	case '}':
 		tok = makeToken(token.RBRACE, l.ch)
 	case '[':
@@ -93,6 +102,8 @@ func (l *Lexer) NextToken() token.Token {
 		tok = makeToken(token.DOT, l.ch)
 	case ',':
 		tok = makeToken(token.COMMA, l.ch)
+	case ':':
+		tok = makeToken(token.COLON, l.ch)
 	case ';':
 		tok = makeToken(token.SEMICOLON, l.ch)
 	case 0:

@@ -180,6 +180,11 @@ func (r *resolver) Resolve(node ast.Node) {
 		for _, el := range node.Elements {
 			r.Resolve(el)
 		}
+	case *ast.HashLiteralExpr:
+		for k, v := range node.Pairs {
+			r.Resolve(k)
+			r.Resolve(v)
+		}
 	case *ast.IntLiteralExpr:
 	case *ast.BoolLiteralExpr:
 	case *ast.StringLiteralExpr:

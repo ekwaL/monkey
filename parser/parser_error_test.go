@@ -42,10 +42,15 @@ func TestParserError(t *testing.T) {
 		[];
 		[)];
 		[,];
+		{| 1 |};
+		{| , |};
+		{| 1: |};
+		{| 1: 2 3: 4 |};
 		class X < Y {
 		fn x(x) { !true;
 		fn (x) { !true;
-		[1,)
+		[1,
+		{|
 		`
 
 	l := lexer.New(source)
@@ -80,7 +85,12 @@ func TestParserError(t *testing.T) {
 		parser.ERR_CLASS_WRONG_DEFINITION,
 		fmt.Sprintf(parser.ERR_NO_PREFIX_PARSLET_FOUND, ")"),
 		fmt.Sprintf(parser.ERR_NO_PREFIX_PARSLET_FOUND, ","),
-		fmt.Sprintf(parser.ERR_NO_PREFIX_PARSLET_FOUND, ")"),
+		// fmt.Sprintf(parser.ERR_NO_PREFIX_PARSLET_FOUND, ")"),
+		parser.ERR_HASH_COLON_AFTER_KEY,
+		fmt.Sprintf(parser.ERR_NO_PREFIX_PARSLET_FOUND, ","),
+		fmt.Sprintf(parser.ERR_NO_PREFIX_PARSLET_FOUND, "|}"),
+		parser.ERR_HASH_NO_COMMA,
+		parser.ERR_HASH_LITERAL_END_BRACE,
 		parser.ERR_ARR_LITERAL_END_BRACKET,
 		parser.ERR_FN_BODY_END_RBRACE,
 		parser.ERR_FN_BODY_END_RBRACE,

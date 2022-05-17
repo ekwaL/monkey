@@ -226,6 +226,36 @@ func (a *ArrayLiteralExpr) String() string {
 	return out.String()
 }
 
+type HashLiteralExpr struct {
+	Token token.Token
+	Pairs map[Expression]Expression
+}
+
+func (h *HashLiteralExpr) expressionNode()      {}
+func (h *HashLiteralExpr) TokenLiteral() string { return h.Token.Literal }
+func (h *HashLiteralExpr) String() string {
+	var out bytes.Buffer
+
+	pairs := []string{}
+	for k, v := range h.Pairs {
+		pairs = append(pairs, k.String()+": "+v.String())
+	}
+
+	out.WriteString("{| ")
+
+	last := len(pairs) - 1
+	for i, pair := range pairs {
+		out.WriteString(pair)
+		if i != last {
+			out.WriteString(", ")
+		}
+	}
+
+	out.WriteString(" |}")
+
+	return out.String()
+}
+
 type PrefixExpr struct {
 	Token    token.Token // prefix token
 	Operator string

@@ -48,6 +48,7 @@ this;
 super;
 
 [1, 2];
+{| 1: 2, 3: 4 |};
 `
 
 func TestNextToken(t *testing.T) {
@@ -228,6 +229,17 @@ func TestNextToken(t *testing.T) {
 		{token.COMMA, ","},
 		{token.INT, "2"},
 		{token.RBRACKET, "]"},
+		{token.SEMICOLON, ";"},
+		// {| 1: 2, 3: 4 |};
+		{token.LHASHBRACE, "{|"},
+		{token.INT, "1"},
+		{token.COLON, ":"},
+		{token.INT, "2"},
+		{token.COMMA, ","},
+		{token.INT, "3"},
+		{token.COLON, ":"},
+		{token.INT, "4"},
+		{token.RHASHBRACE, "|}"},
 		{token.SEMICOLON, ";"},
 
 		{token.EOF, "\x00"},

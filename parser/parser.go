@@ -88,6 +88,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.THIS, p.parseThisExpr)
 	p.registerPrefix(token.SUPER, p.parseSuperExpr)
 	p.registerPrefix(token.LBRACKET, p.parseArrayLiteralExpr)
+	p.registerPrefix(token.LHASHBRACE, p.parseHashLiteral)
 
 	p.infixParslets = make(map[token.TokenType]infixParslet)
 	p.registerInfix(token.PLUS, p.parseInfixExpr)

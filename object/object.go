@@ -2,6 +2,7 @@ package object
 
 import (
 	"bytes"
+	"hash/fnv"
 	"monkey/ast"
 	"monkey/token"
 	"strconv"
@@ -17,6 +18,7 @@ const (
 	BOOLEAN_OBJ      = "BOOLEAN"
 	STRING_OBJ       = "STRING"
 	ARRAY_OBJ        = "ARRAY"
+	HASH_OBJ         = "HASH"
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
 	ERROR_OBJ        = "ERROR"
 	FUNCTION_OBJ     = "FUNCTION"
@@ -28,6 +30,10 @@ const (
 type Object interface {
 	Type() ObjectType
 	Inspect() string
+}
+
+type Hashable interface {
+	HashKey() HashKey
 }
 
 type Integer struct {
@@ -67,6 +73,31 @@ func (a *Array) Inspect() string {
 	out.WriteString("[")
 	out.WriteString(strings.Join(els, ", "))
 	out.WriteString("]")
+
+	return out.String()
+}
+
+type HashPair struct {
+	Key   Object
+	Value Object
+}
+
+type Hash struct {
+	Pairs map[HashKey]HashPair
+}
+
+func (h *Hash) Type() ObjectType { return HASH_OBJ }
+func (h *Hash) Inspect() string {
+	var out bytes.Buffer
+
+	els := []string{}
+	for _, pair := range h.Pairs {
+		els = append(els, pair.Key.Inspect()+": "+pair.Value.Inspect())
+	}
+
+	out.WriteString("{| ")
+	out.WriteString(strings.Join(els, ", "))
+	out.WriteString(" |}")
 
 	return out.String()
 }
@@ -165,4 +196,32 @@ type Instance struct {
 func (i *Instance) Type() ObjectType { return INSTANCE_OBJ }
 func (i *Instance) Inspect() string {
 	return "<instance of " + i.Class.Name.Value + ">"
+}
+
+type HashKey struct {
+	Type  ObjectType
+	Value uint64
+}
+
+func (b *Boolean) HashKey() HashKey {
+	var value uint64
+
+	if b.Value {
+		value = 1
+	} else {
+		value = 0
+	}
+
+	return HashKey{Type: b.Type(), Value: value}
+}
+
+func (i *Integer) HashKey() HashKey {
+	return HashKey{Type: i.Type(), Value: uint64(i.Value)}
+}
+
+func (s *String) HashKey() HashKey {
+	h := fnv.New64a()
+	h.Write([]byte(s.Value))
+
+	return HashKey{Type: s.Type(), Value: h.Sum64()}
 }

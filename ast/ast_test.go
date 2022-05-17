@@ -499,6 +499,47 @@ func TestAstString(t *testing.T) {
 					},
 				},
 			},
+			// hashed
+			&ast.ExpressionStmt{
+				Token: token.Token{
+					Type:    token.LHASHBRACE,
+					Literal: "{|",
+				},
+				Expression: &ast.HashLiteralExpr{
+					Token: token.Token{
+						Type:    token.LHASHBRACE,
+						Literal: "{|",
+					},
+					Pairs: map[ast.Expression]ast.Expression{
+						&ast.StringLiteralExpr{
+							Token: token.Token{
+								Type:    token.STRING,
+								Literal: "x",
+							},
+							Value: "x",
+						}: &ast.IntLiteralExpr{
+							Token: token.Token{
+								Type:    token.INT,
+								Literal: "10",
+							},
+							Value: 10,
+						},
+						&ast.StringLiteralExpr{
+							Token: token.Token{
+								Type:    token.STRING,
+								Literal: "y",
+							},
+							Value: "y",
+						}: &ast.BoolLiteralExpr{
+							Token: token.Token{
+								Type:    token.TRUE,
+								Literal: "true",
+							},
+							Value: true,
+						},
+					},
+				},
+			},
 		},
 	}
 
@@ -518,6 +559,7 @@ class Hello < World {
 (obj.field = 10);
 [x, 10];
 (arr[2]);
+{| "x": 10, "y": true |};
 `
 	if program.String() != want {
 		t.Errorf("Wrong program.String() output. Want %q, got %q.", want, program.String())

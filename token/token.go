@@ -39,6 +39,7 @@ const (
 	DOT       = "."
 	COMMA     = ","
 	SEMICOLON = ";"
+	COLON     = ":"
 
 	LPAREN   = "("
 	RPAREN   = ")"
@@ -46,6 +47,8 @@ const (
 	RBRACE   = "}"
 	LBRACKET = "["
 	RBRACKET = "]"
+	LHASHBRACE = "{|"
+	RHASHBRACE = "|}"
 
 	// Keywords
 	CLASS    = "CLASS"

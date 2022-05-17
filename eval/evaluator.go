@@ -65,6 +65,28 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			arr.Elements = append(arr.Elements, val)
 		}
 		return arr
+	case *ast.HashLiteralExpr:
+		h := &object.Hash{Pairs: make(map[object.HashKey]object.HashPair)}
+		for k, v := range node.Pairs {
+			key := Eval(k, env)
+			if isError(key) {
+				return key
+			}
+
+			hashKey, ok := key.(object.Hashable)
+			if !ok {
+				return notHashableKeyError(key.Type())
+			}
+
+			val := Eval(v, env)
+			if isError(val) {
+				return val
+			}
+
+			hashed := hashKey.HashKey()
+			h.Pairs[hashed] = object.HashPair{Key: key, Value: val}
+		}
+		return h
 	case *ast.NullExpr:
 		return NULL
 	case *ast.PrefixExpr:
@@ -100,20 +122,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 			return idx
 		}
 
-		if left.Type() != object.ARRAY_OBJ || idx.Type() != object.INTEGER_OBJ {
-			return indexOperatorError(left.Type(), idx.Type())
-		}
-
-		arr := left.(*object.Array)
-		l := int64(len(arr.Elements))
-		i := idx.(*object.Integer).Value
-		if i >= 0 && i < l {
-			return arr.Elements[i]
-		} else if i < 0 && l + i >= 0 {
-			return arr.Elements[l + i]
-		} else {
-			return outOfBoundsError(left.Type(), i)
-		}
+		return evalIndexExpression(left, idx)
 	case *ast.GetExpr:
 		return evalGetExpr(node, env)
 	case *ast.SetExpr:
@@ -390,6 +399,46 @@ func evalStringInfixExpr(left object.Object, operator string, right object.Objec
 	default:
 		return unknownInfixOperatorError(left.Type(), operator, right.Type())
 	}
+}
+
+func evalIndexExpression(left, index object.Object) object.Object {
+	switch {
+	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
+		return evalArrayIndexExpression(left, index)
+	case left.Type() == object.HASH_OBJ:
+		return evalHashIndexExpression(left, index)
+	default:
+		return indexOperatorError(left.Type(), index.Type())
+	}
+}
+
+func evalArrayIndexExpression(left, index object.Object) object.Object {
+	arr := left.(*object.Array)
+	l := int64(len(arr.Elements))
+	i := index.(*object.Integer).Value
+	if i >= 0 && i < l {
+		return arr.Elements[i]
+	} else if i < 0 && l+i >= 0 {
+		return arr.Elements[l+i]
+	} else {
+		return outOfBoundsError(left.Type(), i)
+	}
+}
+
+func evalHashIndexExpression(left, index object.Object) object.Object {
+	hash := left.(*object.Hash)
+
+	key, ok := index.(object.Hashable)
+	if !ok {
+		return notHashableKeyError(index.Type())
+	}
+
+	pair, ok := hash.Pairs[key.HashKey()]
+	if !ok {
+		return NULL
+	}
+
+	return pair.Value
 }
 
 func evalIfExpr(expr *ast.IfExpr, env *object.Environment) object.Object {

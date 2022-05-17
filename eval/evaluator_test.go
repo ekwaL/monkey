@@ -279,6 +279,23 @@ func TestEval(t *testing.T) {
 		{source: "let arr = [1, 2, 3]; let i = arr[0]; arr[i]", want: int64(2)},
 		{source: "let arr = [1, 2, 3]; let i = arr[0]; arr[-i]", want: int64(3)},
 		{source: "len([1, 2, 3]);", want: int64(3)},
+		{
+			source: `{| 1: true, 2: "hello", "world": 3 |};`,
+			want:   map[interface{}]interface{}{int64(1): true, int64(2): "hello", "world": int64(3)},
+		},
+		{source: `{| 1: true, 2: "hello", "world": 3 |}[2];`, want: "hello"},
+		{source: `{| 1: true, 2: "hello" + " world", "world": 3 |}[2];`, want: "hello world"},
+		{source: `{| 1: true, 2: "hello" + " world", "world": 3 |}[true];`, want: nil},
+		{source: `{| 1: true, "fn": fn(x){ x + x }, "world": 3 |}["fn"]("wow");`, want: "wowwow"},
+		{source: `let x = 2; {| x: true, "fn": fn(x){ x + x }, "world": 3 |}[2];`, want: true},
+		{
+			source: `class A {} {| 1: true, "fn": fn(x){ x + x }, "world": A |}["world"]();`,
+			want:   &expectInstance{class: "A"},
+		},
+		{
+			source: `let x= {| 1: "world", "fn": fn(x){ x + x }, "world": 3 |}; x["fn"](x[x[1]])`,
+			want:   int64(6),
+		},
 	}
 
 	for _, tc := range tt {
@@ -363,6 +380,10 @@ func TestRuntimeErrorHandling(t *testing.T) {
 		{source: `"hello"[-4]`, want: "unknown operator: STRING[INTEGER]"},
 		{source: `["hello", "world"]["first"]`, want: "unknown operator: ARRAY[STRING]"},
 		{source: `(fn (){})[0]`, want: "unknown operator: FUNCTION[INTEGER]"},
+		{source: `{| 1: true && false, 2 + 3: "hello", "world": 3, fn(){}: "oops" |}`, want: "unusable as hash key: FUNCTION"},
+		{source: `let arr = []; {| 1: true, false: 2, 3: "hello" |}[arr]`, want: "unusable as hash key: ARRAY"},
+		{source: `class A{} {| 1: true, false: 2, 3: "hello" |}[A]`, want: "unusable as hash key: CLASS"},
+		{source: `class A{} {| 1: true, false: 2, 3: "hello" |}[A()]`, want: "unusable as hash key: INSTANCE"},
 	}
 
 	for _, tc := range tt {
@@ -437,6 +458,42 @@ func testObject(t testing.TB, obj object.Object, want interface{}) {
 
 		for i, el := range a.Elements {
 			testObject(t, el, w[i])
+		}
+	case object.HASH_OBJ:
+		h, ok := obj.(*object.Hash)
+		if !ok {
+			t.Errorf("Object is not an Hash, got %T. (%+v)", obj, obj)
+		}
+		w, ok := want.(map[interface{}]interface{})
+		if !ok {
+			t.Fatalf("Can not compare %q value with %T .", obj.Type(), want)
+		}
+
+		if len(w) != len(h.Pairs) {
+			t.Fatalf("Wrong hash value, got %s, want %v", h.Inspect(), w)
+		}
+
+		for _, pair := range h.Pairs {
+			var ok bool
+			var want interface{}
+
+			switch k := pair.Key.(type) {
+			case *object.String:
+				want, ok = w[k.Value]
+			case *object.Boolean:
+				want, ok = w[k.Value]
+			case *object.Integer:
+				want, ok = w[k.Value]
+			default:
+				t.Fatalf("Unknown key type.")
+			}
+
+			if !ok {
+				t.Errorf("Want %v, got %+v.", w, h.Pairs)
+				t.Errorf("Didn't expect key '%v' in pair '%v: %v'", pair.Key, pair.Key, pair.Value)
+			} else {
+				testObject(t, pair.Value, want)
+			}
 		}
 	case object.NULL_OBJ:
 		_, ok := obj.(*object.Null)
