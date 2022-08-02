@@ -5,7 +5,10 @@ import (
 	"monkey/token"
 )
 
-const ERR_ARR_LITERAL_END_BRACKET = "Expect array literal elements list to end with ']'."
+const (
+	ERR_ARR_LITERAL_END_BRACKET = "Expect array literal elements list to end with ']'."
+	ERR_ARR_NO_COMMA          = "Expect array elements to be separated with ','."
+)
 
 func (p *Parser) parseArrayLiteralExpr() ast.Expression {
 	arr := &ast.ArrayLiteralExpr{
@@ -21,6 +24,19 @@ func (p *Parser) parseArrayLiteralExpr() ast.Expression {
 		if p.peekTokenIs(token.COMMA) {
 			p.nextToken()
 		}
+
+		// el := p.parseExpression(LOWEST)
+
+		// if el == nil {
+		// 	return nil
+		// }
+
+		// arr.Elements = append(arr.Elements, el)
+
+		// if (!p.peekTokenIs(token.RBRACKET) || !p.peekTokenIs(token.EOF)) &&
+		// 	!p.expectPeek(token.COMMA, ERR_ARR_NO_COMMA) {
+		// 	return nil
+		// }
 	}
 
 	if !p.expectPeek(token.RBRACKET, ERR_ARR_LITERAL_END_BRACKET) {
